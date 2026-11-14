@@ -1,0 +1,4 @@
+# Format: StationID,LocationID,Slots
+# Each charging station sits at a location of type CHARGING
+C01,L04,1
+C02,L10,2

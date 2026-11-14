@@ -9,6 +9,7 @@
 #include "PickingPlan.h"
 #include "Planner.h"
 #include "Executor.h"
+#include "ChargingManager.h"
 #include "Utils.h"
 using namespace std;
 
@@ -566,6 +567,73 @@ void executionMenu(Executor& executor, PlanManager& plans) {
 }
 
 // ---------------------------------------------------------------
+// Module 7 menu: Robot Battery and Charging
+// ---------------------------------------------------------------
+
+void handleFindStation(ChargingManager& charging, RobotFleet& fleet, const Graph& warehouse) {
+    Robot* robot = fleet.findRobot(readId("  Enter robot ID: "));
+    if (robot == nullptr) {
+        cout << "  Robot not found.\n";
+        return;
+    }
+    int distance;
+    ChargingStation* station = charging.chooseStation(robot, warehouse, distance);
+    if (station == nullptr) {
+        cout << "  No charging station is reachable for " << robot->id << ".\n";
+        return;
+    }
+    cout << "  Best station for " << robot->id << ": " << station->id << " at " << station->locationId
+         << ", distance " << distance << ", uses about " << robot->legConsumption(distance, 0) << "% battery.\n";
+    if (station->freeSlots() > 0) {
+        cout << "  It has a free slot, so the robot would start charging immediately.\n";
+    } else {
+        cout << "  All slots are busy, so the robot would join the queue.\n";
+    }
+}
+
+void chargingMenu(ChargingManager& charging, RobotFleet& fleet, const Graph& warehouse) {
+    while (true) {
+        cout << "\n========== BATTERY & CHARGING ==========\n";
+        cout << "  1. Display all charging stations\n";
+        cout << "  2. Identify robots requiring charging\n";
+        cout << "  3. Find a reachable charging station for a robot\n";
+        cout << "  4. Check slot availability at a station\n";
+        cout << "  5. Send robot to charge (starts charging or joins the queue)\n";
+        cout << "  6. Complete charging of a robot\n";
+        cout << "  7. Remove a robot from a charging queue\n";
+        cout << "  8. Update robot battery level\n";
+        cout << "  0. Back to main menu\n";
+
+        int choice = readInt("Enter choice: ", 0, 8);
+        if (choice == 0) {
+            return;
+        }
+        if (choice == 1) {
+            charging.displayAll();
+        } else if (choice == 2) {
+            fleet.displayNeedingCharge();
+        } else if (choice == 3) {
+            handleFindStation(charging, fleet, warehouse);
+        } else if (choice == 4) {
+            charging.displayStation(readId("  Enter station ID (e.g. C01): "));
+        } else if (choice == 8) {
+            handleUpdateBattery(fleet);
+        } else {
+            Robot* robot = fleet.findRobot(readId("  Enter robot ID: "));
+            if (robot == nullptr) {
+                cout << "  Robot not found.\n";
+            } else if (choice == 5) {
+                charging.sendToCharge(robot, warehouse);
+            } else if (choice == 6) {
+                charging.completeCharging(robot);
+            } else {
+                charging.removeFromQueue(robot);
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------
 // Program start
 // ---------------------------------------------------------------
 
@@ -594,6 +662,9 @@ int main() {
     RobotFleet fleet;
     fleet.loadRobots("data/robots.txt", warehouse);
 
+    ChargingManager charging;
+    charging.load("data/chargers.txt", warehouse);
+
     // Picking plans connect all the modules above
     PlanManager plans;
     Planner planner(warehouse, inventory, fleet, orders, plans);
@@ -607,9 +678,10 @@ int main() {
         cout << "  4. Robot Fleet\n";
         cout << "  5. Robot Assignment & Picking Plans\n";
         cout << "  6. Order Picking & Delivery Execution\n";
+        cout << "  7. Battery & Charging\n";
         cout << "  0. Exit\n";
 
-        int choice = readInt("Enter choice: ", 0, 6);
+        int choice = readInt("Enter choice: ", 0, 7);
         if (choice == 1) {
             layoutMenu(warehouse);
         } else if (choice == 2) {
@@ -622,6 +694,8 @@ int main() {
             planningMenu(planner, plans);
         } else if (choice == 6) {
             executionMenu(executor, plans);
+        } else if (choice == 7) {
+            chargingMenu(charging, fleet, warehouse);
         } else {
             cout << "Goodbye!\n";
             break;
