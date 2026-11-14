@@ -87,6 +87,54 @@ public:
         return count;
     }
 
+    // Puts an item back at the front (used when an assignment is cancelled
+    // and the order must be processed next): O(1)
+    void enqueueFront(const T& value) {
+        QueueNode<T>* node = new QueueNode<T>(value);
+        node->next = front;
+        front = node;
+        if (rear == nullptr) {
+            rear = node;
+        }
+        count++;
+    }
+
+    // Removes the first matching item from anywhere in the queue.
+    // Needs a linear scan, so it is O(n). Returns false if not found.
+    bool remove(const T& value) {
+        QueueNode<T>* current = front;
+        QueueNode<T>* previous = nullptr;
+        while (current != nullptr) {
+            if (current->data == value) {
+                if (previous == nullptr) {
+                    front = current->next;
+                } else {
+                    previous->next = current->next;
+                }
+                if (current == rear) {
+                    rear = previous;
+                }
+                delete current;
+                count--;
+                return true;
+            }
+            previous = current;
+            current = current->next;
+        }
+        return false;
+    }
+
+    bool contains(const T& value) const {
+        QueueNode<T>* current = front;
+        while (current != nullptr) {
+            if (current->data == value) {
+                return true;
+            }
+            current = current->next;
+        }
+        return false;
+    }
+
     // Lets other code walk through the queue (for display) without removing anything
     QueueNode<T>* getFront() const {
         return front;

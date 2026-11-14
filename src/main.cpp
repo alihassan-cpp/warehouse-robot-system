@@ -4,6 +4,7 @@
 #include "Route.h"
 #include "Inventory.h"
 #include "Allocation.h"
+#include "OrderManager.h"
 #include "Utils.h"
 using namespace std;
 
@@ -259,6 +260,115 @@ void inventoryMenu(Inventory& inventory, Graph& warehouse) {
 }
 
 // ---------------------------------------------------------------
+// Module 3 menu: Customer Order Management
+// ---------------------------------------------------------------
+
+// Asks for products one by one and adds them to the given order.
+// Used both when creating an order and when adding to an existing one.
+int readOrderItems(Order* order, const Inventory& inventory) {
+    int count = readInt("  How many different products to add? (1 - 20): ", 1, 20);
+    int added = 0;
+    for (int i = 1; i <= count; i++) {
+        cout << "  Product " << i << ":\n";
+        string productId = readId("    Product ID: ");
+        if (inventory.findProduct(productId) == nullptr) {
+            cout << "    Product " << productId << " does not exist, skipped.\n";
+            continue;
+        }
+        int quantity = readInt("    Quantity (1 - 10000): ", 1, 10000);
+        order->addItem(productId, quantity);
+        added++;
+    }
+    return added;
+}
+
+void handleAddOrder(OrderManager& orders, const Inventory& inventory) {
+    string orderId = readId("  Enter order ID (e.g. O112): ");
+    if (orders.findOrder(orderId) != nullptr) {
+        cout << "  Order " << orderId << " already exists. Order IDs must be unique.\n";
+        return;
+    }
+    string customerId = readId("  Enter customer ID (e.g. CU12): ");
+
+    // Build the order first, then hand it to the manager to validate and queue
+    Order* order = new Order(orderId, customerId);
+    readOrderItems(order, inventory);
+    if (orders.addOrder(order, inventory)) {
+        cout << "  Order " << orderId << " added and placed at the rear of the queue.\n";
+    } else {
+        delete order;
+    }
+}
+
+void handleAddItemsToOrder(OrderManager& orders, const Inventory& inventory) {
+    string orderId = readId("  Enter order ID: ");
+    Order* order = orders.findOrder(orderId);
+    if (order == nullptr) {
+        cout << "  Order " << orderId << " not found.\n";
+        return;
+    }
+    if (order->status != OrderStatus::Pending) {
+        cout << "  Items can only be added to a Pending order (this one is "
+             << statusToString(order->status) << ").\n";
+        return;
+    }
+
+    int count = readInt("  How many different products to add? (1 - 20): ", 1, 20);
+    for (int i = 1; i <= count; i++) {
+        cout << "  Product " << i << ":\n";
+        string productId = readId("    Product ID: ");
+        int quantity = readInt("    Quantity (1 - 10000): ", 1, 10000);
+        if (orders.addItemToOrder(orderId, productId, quantity, inventory)) {
+            cout << "    Added (merged if already in the order).\n";
+        }
+    }
+}
+
+void handleCancelOrder(OrderManager& orders, Inventory& inventory) {
+    string orderId = readId("  Enter order ID to cancel: ");
+    if (orders.cancelOrder(orderId, inventory)) {
+        cout << "  Order " << orderId << " cancelled.\n";
+    }
+}
+
+void ordersMenu(OrderManager& orders, Inventory& inventory) {
+    while (true) {
+        cout << "\n============ CUSTOMER ORDERS ============\n";
+        cout << "  1. Display all orders\n";
+        cout << "  2. Add a new order\n";
+        cout << "  3. Add products to an order\n";
+        cout << "  4. Search order by ID\n";
+        cout << "  5. Enqueue pending orders into the queue\n";
+        cout << "  6. Display pending queue (front to rear)\n";
+        cout << "  7. Peek front order and queue size\n";
+        cout << "  8. Cancel an order\n";
+        cout << "  9. Remove cancelled orders from the queue\n";
+        cout << " 10. Display pending and completed orders\n";
+        cout << "  0. Back to main menu\n";
+
+        int choice = readInt("Enter choice: ", 0, 10);
+        switch (choice) {
+            case 1: orders.displayAll(inventory); break;
+            case 2: handleAddOrder(orders, inventory); break;
+            case 3: handleAddItemsToOrder(orders, inventory); break;
+            case 4: orders.displayOrder(readId("  Enter order ID: "), inventory); break;
+            case 5:
+                cout << "  " << orders.enqueuePendingOrders() << " pending orders added to the queue "
+                     << "(orders already queued are not added twice).\n";
+                break;
+            case 6: orders.displayQueue(inventory); break;
+            case 7: orders.displayFront(inventory); break;
+            case 8: handleCancelOrder(orders, inventory); break;
+            case 9:
+                cout << "  " << orders.removeCancelledFromQueue() << " cancelled orders removed from the queue.\n";
+                break;
+            case 10: orders.displayPendingAndCompleted(inventory); break;
+            case 0: return;
+        }
+    }
+}
+
+// ---------------------------------------------------------------
 // Program start
 // ---------------------------------------------------------------
 
@@ -279,17 +389,24 @@ int main() {
     inventory.loadProducts("data/products.txt");
     inventory.loadInventory("data/inventory.txt");
 
+    // Orders need products to exist, so they are loaded after the inventory
+    OrderManager orders;
+    orders.loadOrders("data/orders.txt", inventory);
+
     while (true) {
         cout << "\n================== MAIN MENU ==================\n";
         cout << "  1. Warehouse Layout & Pathways\n";
         cout << "  2. Product Inventory & Racks\n";
+        cout << "  3. Customer Orders\n";
         cout << "  0. Exit\n";
 
-        int choice = readInt("Enter choice: ", 0, 2);
+        int choice = readInt("Enter choice: ", 0, 3);
         if (choice == 1) {
             layoutMenu(warehouse);
         } else if (choice == 2) {
             inventoryMenu(inventory, warehouse);
+        } else if (choice == 3) {
+            ordersMenu(orders, inventory);
         } else {
             cout << "Goodbye!\n";
             break;
