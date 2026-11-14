@@ -8,6 +8,7 @@
 #include "RobotFleet.h"
 #include "PickingPlan.h"
 #include "Planner.h"
+#include "Executor.h"
 #include "Utils.h"
 using namespace std;
 
@@ -540,6 +541,31 @@ void planningMenu(Planner& planner, PlanManager& plans) {
 }
 
 // ---------------------------------------------------------------
+// Module 6 menu: Order Picking and Delivery Execution
+// ---------------------------------------------------------------
+
+void executionMenu(Executor& executor, PlanManager& plans) {
+    while (true) {
+        cout << "\n========== ORDER PICKING & DELIVERY ==========\n";
+        cout << "  1. Execute picking task for an assigned order\n";
+        cout << "  2. Display all assigned picking plans\n";
+        cout << "  0. Back to main menu\n";
+
+        int choice = readInt("Enter choice: ", 0, 2);
+        if (choice == 1) {
+            executor.listAssignedOrders();
+            if (plans.getHead() != nullptr) {
+                executor.runOrder(readId("  Enter order ID: "));
+            }
+        } else if (choice == 2) {
+            plans.displayAll();
+        } else {
+            return;
+        }
+    }
+}
+
+// ---------------------------------------------------------------
 // Program start
 // ---------------------------------------------------------------
 
@@ -571,6 +597,7 @@ int main() {
     // Picking plans connect all the modules above
     PlanManager plans;
     Planner planner(warehouse, inventory, fleet, orders, plans);
+    Executor executor(warehouse, inventory, fleet, orders, plans);
 
     while (true) {
         cout << "\n================== MAIN MENU ==================\n";
@@ -579,9 +606,10 @@ int main() {
         cout << "  3. Customer Orders\n";
         cout << "  4. Robot Fleet\n";
         cout << "  5. Robot Assignment & Picking Plans\n";
+        cout << "  6. Order Picking & Delivery Execution\n";
         cout << "  0. Exit\n";
 
-        int choice = readInt("Enter choice: ", 0, 5);
+        int choice = readInt("Enter choice: ", 0, 6);
         if (choice == 1) {
             layoutMenu(warehouse);
         } else if (choice == 2) {
@@ -592,6 +620,8 @@ int main() {
             robotsMenu(fleet, warehouse, orders, inventory);
         } else if (choice == 5) {
             planningMenu(planner, plans);
+        } else if (choice == 6) {
+            executionMenu(executor, plans);
         } else {
             cout << "Goodbye!\n";
             break;
