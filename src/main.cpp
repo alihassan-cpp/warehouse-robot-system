@@ -2,6 +2,8 @@
 #include <string>
 #include "Graph.h"
 #include "Route.h"
+#include "Inventory.h"
+#include "Allocation.h"
 #include "Utils.h"
 using namespace std;
 
@@ -131,6 +133,132 @@ void layoutMenu(Graph& warehouse) {
 }
 
 // ---------------------------------------------------------------
+// Module 2 menu: Product Inventory and Storage Racks
+// ---------------------------------------------------------------
+
+void handleInsertProduct(Inventory& inventory) {
+    string id = readId("  Enter product ID (e.g. P111): ");
+    string name = readLine("  Enter product name: ");
+    double weight = readDouble("  Enter unit weight in kg (0.1 - 60): ", 0.1, 60);
+    int reorder = readInt("  Enter reorder level (0 - 100000): ", 0, 100000);
+    if (inventory.addProduct(id, name, weight, reorder)) {
+        cout << "  Product " << id << " inserted into the AVL tree.\n";
+    }
+}
+
+void handleDeleteProduct(Inventory& inventory) {
+    string id = readId("  Enter product ID to delete: ");
+    if (inventory.deleteProduct(id)) {
+        cout << "  Product " << id << " deleted and tree rebalanced.\n";
+    }
+}
+
+void handleAddRackEntry(Inventory& inventory) {
+    string productId = readId("  Enter product ID: ");
+    string rackId = readId("  Enter rack ID (e.g. RK05): ");
+    int quantity = readInt("  Enter quantity (0 - 100000): ", 0, 100000);
+    if (inventory.addRackEntry(productId, rackId, quantity)) {
+        cout << "  Rack " << rackId << " added to " << productId << " with " << quantity << " units.\n";
+    }
+}
+
+void handleUpdateQuantity(Inventory& inventory) {
+    string productId = readId("  Enter product ID: ");
+    string rackId = readId("  Enter rack ID: ");
+    int newQuantity = readInt("  Enter new total quantity (0 - 100000): ", 0, 100000);
+    int oldQuantity;
+    if (inventory.updateQuantity(productId, rackId, newQuantity, oldQuantity)) {
+        cout << "  " << productId << " in " << rackId << " updated: " << oldQuantity << " -> " << newQuantity << "\n";
+    }
+}
+
+void handleRemoveRackEntry(Inventory& inventory) {
+    string productId = readId("  Enter product ID: ");
+    string rackId = readId("  Enter rack ID to remove: ");
+    if (inventory.removeRackEntry(productId, rackId)) {
+        cout << "  Rack " << rackId << " removed from " << productId << ".\n";
+    }
+}
+
+void handleStockTotals(Inventory& inventory, bool availableOnly) {
+    string productId = readId("  Enter product ID: ");
+    if (inventory.findProduct(productId) == nullptr) {
+        cout << "  Product " << productId << " not found.\n";
+        return;
+    }
+    if (availableOnly) {
+        cout << "  Available stock of " << productId << " (total - reserved): "
+             << inventory.availableStock(productId) << " units\n";
+    } else {
+        cout << "  Total stock of " << productId << " across all racks: "
+             << inventory.totalStock(productId) << " units\n";
+    }
+}
+
+void handlePreviewAllocation(Inventory& inventory, Graph& warehouse) {
+    string productId = readId("  Enter product ID: ");
+    if (inventory.findProduct(productId) == nullptr) {
+        cout << "  Product " << productId << " not found.\n";
+        return;
+    }
+    int quantity = readInt("  Enter quantity needed (1 - 100000): ", 1, 100000);
+    string reference = readId("  Enter robot's current location (e.g. L01): ");
+    if (warehouse.findLocation(reference) == nullptr) {
+        cout << "  Location " << reference << " does not exist.\n";
+        return;
+    }
+
+    Allocation allocation;
+    int shortage;
+    if (inventory.allocate(productId, quantity, reference, warehouse, allocation, shortage, false)) {
+        cout << "\n  Allocation for " << quantity << " x " << productId << " from " << reference << ":\n";
+        allocation.display();
+        cout << "  (Preview only. Nothing has been reserved.)\n";
+    } else {
+        cout << "  Shortage: only " << (quantity - shortage) << " reachable units available, "
+             << shortage << " short. Order would stay Pending.\n";
+    }
+}
+
+void inventoryMenu(Inventory& inventory, Graph& warehouse) {
+    while (true) {
+        cout << "\n========== PRODUCT INVENTORY & RACKS ==========\n";
+        cout << "  1. Display all products\n";
+        cout << "  2. Display AVL tree structure\n";
+        cout << "  3. Insert a new product\n";
+        cout << "  4. Delete a product\n";
+        cout << "  5. Search product by ID (with its racks)\n";
+        cout << "  6. Add a rack entry to a product\n";
+        cout << "  7. Update quantity in a rack\n";
+        cout << "  8. Remove a rack entry\n";
+        cout << "  9. Total stock of a product\n";
+        cout << " 10. Available stock of a product\n";
+        cout << " 11. Low stock report (below reorder level)\n";
+        cout << " 12. Display all racks and locations\n";
+        cout << " 13. Preview rack allocation for a quantity\n";
+        cout << "  0. Back to main menu\n";
+
+        int choice = readInt("Enter choice: ", 0, 13);
+        switch (choice) {
+            case 1: inventory.displayAllProducts(); break;
+            case 2: inventory.displayTreeStructure(); break;
+            case 3: handleInsertProduct(inventory); break;
+            case 4: handleDeleteProduct(inventory); break;
+            case 5: inventory.displayProduct(readId("  Enter product ID: ")); break;
+            case 6: handleAddRackEntry(inventory); break;
+            case 7: handleUpdateQuantity(inventory); break;
+            case 8: handleRemoveRackEntry(inventory); break;
+            case 9: handleStockTotals(inventory, false); break;
+            case 10: handleStockTotals(inventory, true); break;
+            case 11: inventory.displayLowStock(); break;
+            case 12: inventory.displayRacks(); break;
+            case 13: handlePreviewAllocation(inventory, warehouse); break;
+            case 0: return;
+        }
+    }
+}
+
+// ---------------------------------------------------------------
 // Program start
 // ---------------------------------------------------------------
 
@@ -141,18 +269,27 @@ int main() {
 
     // All data comes from files; nothing is hardcoded.
     // Run the program from the project folder so "data/..." can be found.
+    // Order matters: racks need locations, inventory needs products and racks.
     Graph warehouse;
     warehouse.loadLocations("data/locations.txt");
     warehouse.loadPathways("data/pathways.txt");
 
+    Inventory inventory;
+    inventory.loadRacks("data/racks.txt", warehouse);
+    inventory.loadProducts("data/products.txt");
+    inventory.loadInventory("data/inventory.txt");
+
     while (true) {
         cout << "\n================== MAIN MENU ==================\n";
         cout << "  1. Warehouse Layout & Pathways\n";
+        cout << "  2. Product Inventory & Racks\n";
         cout << "  0. Exit\n";
 
-        int choice = readInt("Enter choice: ", 0, 1);
+        int choice = readInt("Enter choice: ", 0, 2);
         if (choice == 1) {
             layoutMenu(warehouse);
+        } else if (choice == 2) {
+            inventoryMenu(inventory, warehouse);
         } else {
             cout << "Goodbye!\n";
             break;

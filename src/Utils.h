@@ -21,9 +21,13 @@ bool idLess(const string& a, const string& b);
 // Converts text to an int; returns false if it is not a clean whole number
 bool parseInt(const string& text, int& result);
 
+// Converts text to a double (e.g. "2.5"); returns false if it is not a valid number
+bool parseDouble(const string& text, double& result);
+
 // Menu input helpers. They keep asking until the input is valid,
 // so bad input can never crash the program.
 int readInt(const string& prompt, int minValue, int maxValue);
+double readDouble(const string& prompt, double minValue, double maxValue);
 string readLine(const string& prompt);
 string readId(const string& prompt);
 

@@ -1,0 +1,11 @@
+# Format: ProductID,Name,UnitWeight(kg),ReorderLevel
+P101,Bluetooth Speaker,1.0,10
+P102,Office Chair,12.0,3
+P103,Desk Lamp,2.0,5
+P104,Laptop Stand,3.0,5
+P105,Water Bottle Pack,4.0,8
+P106,Laser Printer,8.0,3
+P107,Keyboard,1.0,10
+P108,Monitor 24 inch,6.0,4
+P109,Book Bundle,2.5,6
+P110,Microwave Oven,15.0,2

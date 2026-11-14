@@ -1,6 +1,7 @@
 #include "Utils.h"
 #include <iostream>
 #include <cstdlib>
+#include <sstream>
 
 string trim(const string& text) {
     int start = 0;
@@ -82,6 +83,29 @@ bool parseInt(const string& text, int& result) {
     return true;
 }
 
+bool parseDouble(const string& text, double& result) {
+    string clean = trim(text);
+    if (clean.empty()) {
+        return false;
+    }
+
+    stringstream stream(clean);
+    double value;
+    stream >> value;
+    if (stream.fail()) {
+        return false;
+    }
+
+    // Anything left over (like "2.5kg") means the input was not a clean number
+    char extra;
+    if (stream >> extra) {
+        return false;
+    }
+
+    result = value;
+    return true;
+}
+
 string readLine(const string& prompt) {
     cout << prompt;
     string line;
@@ -102,6 +126,20 @@ int readInt(const string& prompt, int minValue, int maxValue) {
             cout << "  Invalid input. Please enter a whole number.\n";
         } else if (value < minValue || value > maxValue) {
             cout << "  Please enter a number between " << minValue << " and " << maxValue << ".\n";
+        } else {
+            return value;
+        }
+    }
+}
+
+double readDouble(const string& prompt, double minValue, double maxValue) {
+    while (true) {
+        string line = readLine(prompt);
+        double value;
+        if (!parseDouble(line, value)) {
+            cout << "  Invalid input. Please enter a number (e.g. 2.5).\n";
+        } else if (value < minValue || value > maxValue) {
+            cout << "  Please enter a value between " << minValue << " and " << maxValue << ".\n";
         } else {
             return value;
         }

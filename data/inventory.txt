@@ -1,0 +1,19 @@
+# Format: ProductID,RackID,Quantity
+# P101 is stored in three racks (same numbers as the PDF allocation example)
+P101,RK01,7
+P101,RK04,8
+P101,RK07,7
+P102,RK05,4
+P102,RK09,3
+P103,RK02,15
+P103,RK08,6
+P104,RK03,10
+P105,RK11,20
+P105,RK06,5
+P106,RK10,2
+P107,RK02,25
+P107,RK04,10
+P108,RK09,5
+P108,RK07,3
+P109,RK08,12
+P110,RK10,1

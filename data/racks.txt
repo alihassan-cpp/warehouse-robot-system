@@ -1,0 +1,13 @@
+# Format: RackID,LocationID
+# Each rack is installed at exactly one location of type RACK
+RK01,L06
+RK02,L02
+RK03,L03
+RK04,L05
+RK05,L07
+RK06,L09
+RK07,L08
+RK08,L13
+RK09,L14
+RK10,L15
+RK11,L01
