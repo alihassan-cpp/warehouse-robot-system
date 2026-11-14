@@ -6,6 +6,8 @@
 #include "Allocation.h"
 #include "OrderManager.h"
 #include "RobotFleet.h"
+#include "PickingPlan.h"
+#include "Planner.h"
 #include "Utils.h"
 using namespace std;
 
@@ -325,14 +327,16 @@ void handleAddItemsToOrder(OrderManager& orders, const Inventory& inventory) {
     }
 }
 
-void handleCancelOrder(OrderManager& orders, Inventory& inventory, RobotFleet& fleet) {
+void handleCancelOrder(OrderManager& orders, Inventory& inventory, RobotFleet& fleet, PlanManager& plans) {
     string orderId = readId("  Enter order ID to cancel: ");
     if (orders.cancelOrder(orderId, inventory, fleet)) {
+        // A cancelled order no longer needs its picking plan
+        plans.remove(orderId);
         cout << "  Order " << orderId << " cancelled.\n";
     }
 }
 
-void ordersMenu(OrderManager& orders, Inventory& inventory, RobotFleet& fleet) {
+void ordersMenu(OrderManager& orders, Inventory& inventory, RobotFleet& fleet, PlanManager& plans) {
     while (true) {
         cout << "\n============ CUSTOMER ORDERS ============\n";
         cout << "  1. Display all orders\n";
@@ -359,7 +363,7 @@ void ordersMenu(OrderManager& orders, Inventory& inventory, RobotFleet& fleet) {
                 break;
             case 6: orders.displayQueue(inventory); break;
             case 7: orders.displayFront(inventory); break;
-            case 8: handleCancelOrder(orders, inventory, fleet); break;
+            case 8: handleCancelOrder(orders, inventory, fleet, plans); break;
             case 9:
                 cout << "  " << orders.removeCancelledFromQueue() << " cancelled orders removed from the queue.\n";
                 break;
@@ -514,6 +518,28 @@ void robotsMenu(RobotFleet& fleet, const Graph& warehouse, OrderManager& orders,
 }
 
 // ---------------------------------------------------------------
+// Module 5 menu: Robot Assignment and Picking Plans
+// ---------------------------------------------------------------
+
+void planningMenu(Planner& planner, PlanManager& plans) {
+    while (true) {
+        cout << "\n========== ROBOT ASSIGNMENT & PICKING PLANS ==========\n";
+        cout << "  1. Process next order from the queue\n";
+        cout << "  2. Preview plan for a specific order (no reservation)\n";
+        cout << "  3. Display all assigned picking plans\n";
+        cout << "  0. Back to main menu\n";
+
+        int choice = readInt("Enter choice: ", 0, 3);
+        switch (choice) {
+            case 1: planner.processNextOrder(); break;
+            case 2: planner.previewOrder(readId("  Enter order ID: ")); break;
+            case 3: plans.displayAll(); break;
+            case 0: return;
+        }
+    }
+}
+
+// ---------------------------------------------------------------
 // Program start
 // ---------------------------------------------------------------
 
@@ -542,23 +568,30 @@ int main() {
     RobotFleet fleet;
     fleet.loadRobots("data/robots.txt", warehouse);
 
+    // Picking plans connect all the modules above
+    PlanManager plans;
+    Planner planner(warehouse, inventory, fleet, orders, plans);
+
     while (true) {
         cout << "\n================== MAIN MENU ==================\n";
         cout << "  1. Warehouse Layout & Pathways\n";
         cout << "  2. Product Inventory & Racks\n";
         cout << "  3. Customer Orders\n";
         cout << "  4. Robot Fleet\n";
+        cout << "  5. Robot Assignment & Picking Plans\n";
         cout << "  0. Exit\n";
 
-        int choice = readInt("Enter choice: ", 0, 4);
+        int choice = readInt("Enter choice: ", 0, 5);
         if (choice == 1) {
             layoutMenu(warehouse);
         } else if (choice == 2) {
             inventoryMenu(inventory, warehouse);
         } else if (choice == 3) {
-            ordersMenu(orders, inventory, fleet);
+            ordersMenu(orders, inventory, fleet, plans);
         } else if (choice == 4) {
             robotsMenu(fleet, warehouse, orders, inventory);
+        } else if (choice == 5) {
+            planningMenu(planner, plans);
         } else {
             cout << "Goodbye!\n";
             break;
