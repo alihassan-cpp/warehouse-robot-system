@@ -1,0 +1,17 @@
+# Format: LocationID,Type,Name
+# Type must be RACK, PACKING or CHARGING
+L01,RACK,Aisle A Rack
+L02,RACK,Aisle B Rack
+L03,RACK,Aisle C Rack
+L04,CHARGING,Charging Bay West
+L05,RACK,Aisle D Rack
+L06,RACK,Aisle E Rack
+L07,RACK,Aisle F Rack
+L08,RACK,Aisle G Rack
+L09,RACK,Aisle H Rack
+L10,CHARGING,Charging Bay East
+L11,PACKING,Packing Station South
+L12,PACKING,Packing Station North
+L13,RACK,Aisle I Rack
+L14,RACK,Aisle J Rack
+L15,RACK,Aisle K Rack

@@ -1,0 +1,27 @@
+# Format: FromID,ToID,Distance,Status
+# Each pathway is written once; the graph is undirected.
+# Route A from the PDF: L01 -> L03 -> L05 -> L08 (total 14)
+L01,L03,4,OPEN
+L03,L05,5,OPEN
+L05,L08,5,OPEN
+# Route B from the PDF: L01 -> L02 -> L06 -> L08 (total 11)
+L01,L02,3,OPEN
+L02,L06,4,OPEN
+L06,L08,4,OPEN
+# Rest of the warehouse
+L01,L04,2,OPEN
+L04,L07,6,OPEN
+L02,L07,5,OPEN
+L07,L08,9,OPEN
+L08,L12,3,OPEN
+L06,L12,6,OPEN
+L05,L09,4,OPEN
+L09,L11,5,OPEN
+L03,L11,10,OPEN
+L11,L13,3,OPEN
+L13,L14,4,OPEN
+L14,L10,3,OPEN
+L10,L12,5,OPEN
+L14,L15,6,OPEN
+L15,L12,4,OPEN
+L09,L10,7,BLOCKED
