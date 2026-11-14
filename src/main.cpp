@@ -10,6 +10,7 @@
 #include "Planner.h"
 #include "Executor.h"
 #include "ChargingManager.h"
+#include "History.h"
 #include "Utils.h"
 using namespace std;
 
@@ -43,10 +44,11 @@ void handleRemovePathway(Graph& warehouse) {
     }
 }
 
-void handleBlockPathway(Graph& warehouse) {
+void handleBlockPathway(Graph& warehouse, HistoryManager& history) {
     string fromId = readId("  Enter first location ID: ");
     string toId = readId("  Enter second location ID: ");
     if (warehouse.blockPathway(fromId, toId)) {
+        history.recordBlock(fromId, toId); // reversible, so it goes on the undo stack
         cout << "  Pathway " << fromId << " <-> " << toId << " is now BLOCKED.\n";
     }
 }
@@ -108,7 +110,7 @@ void handleShortestRoute(Graph& warehouse) {
     }
 }
 
-void layoutMenu(Graph& warehouse) {
+void layoutMenu(Graph& warehouse, HistoryManager& history) {
     while (true) {
         cout << "\n========== WAREHOUSE LAYOUT & PATHWAYS ==========\n";
         cout << "  1. Display all locations and connections\n";
@@ -128,7 +130,7 @@ void layoutMenu(Graph& warehouse) {
             case 2: handleAddLocation(warehouse); break;
             case 3: handleAddPathway(warehouse); break;
             case 4: handleRemovePathway(warehouse); break;
-            case 5: handleBlockPathway(warehouse); break;
+            case 5: handleBlockPathway(warehouse, history); break;
             case 6: handleReopenPathway(warehouse); break;
             case 7: handleSearchLocation(warehouse); break;
             case 8: handleCheckConnected(warehouse); break;
@@ -168,12 +170,13 @@ void handleAddRackEntry(Inventory& inventory) {
     }
 }
 
-void handleUpdateQuantity(Inventory& inventory) {
+void handleUpdateQuantity(Inventory& inventory, HistoryManager& history) {
     string productId = readId("  Enter product ID: ");
     string rackId = readId("  Enter rack ID: ");
     int newQuantity = readInt("  Enter new total quantity (0 - 100000): ", 0, 100000);
     int oldQuantity;
     if (inventory.updateQuantity(productId, rackId, newQuantity, oldQuantity)) {
+        history.recordQuantityUpdate(productId, rackId, oldQuantity, newQuantity);
         cout << "  " << productId << " in " << rackId << " updated: " << oldQuantity << " -> " << newQuantity << "\n";
     }
 }
@@ -226,7 +229,7 @@ void handlePreviewAllocation(Inventory& inventory, Graph& warehouse) {
     }
 }
 
-void inventoryMenu(Inventory& inventory, Graph& warehouse) {
+void inventoryMenu(Inventory& inventory, Graph& warehouse, HistoryManager& history) {
     while (true) {
         cout << "\n========== PRODUCT INVENTORY & RACKS ==========\n";
         cout << "  1. Display all products\n";
@@ -252,7 +255,7 @@ void inventoryMenu(Inventory& inventory, Graph& warehouse) {
             case 4: handleDeleteProduct(inventory); break;
             case 5: inventory.displayProduct(readId("  Enter product ID: ")); break;
             case 6: handleAddRackEntry(inventory); break;
-            case 7: handleUpdateQuantity(inventory); break;
+            case 7: handleUpdateQuantity(inventory, history); break;
             case 8: handleRemoveRackEntry(inventory); break;
             case 9: handleStockTotals(inventory, false); break;
             case 10: handleStockTotals(inventory, true); break;
@@ -434,15 +437,17 @@ void handleReleaseRobot(RobotFleet& fleet) {
     }
 }
 
-void handleMaintenance(RobotFleet& fleet, bool goingIn) {
+void handleMaintenance(RobotFleet& fleet, bool goingIn, HistoryManager& history) {
     string robotId = readId("  Enter robot ID: ");
     RobotStatus oldStatus;
     if (goingIn) {
         if (fleet.setUnavailable(robotId, oldStatus)) {
+            history.recordMaintenance(robotId, oldStatus, RobotStatus::Unavailable);
             cout << "  Robot " << robotId << " is now Unavailable (maintenance).\n";
         }
     } else {
         if (fleet.returnFromMaintenance(robotId, oldStatus)) {
+            history.recordMaintenance(robotId, oldStatus, RobotStatus::Available);
             cout << "  Robot " << robotId << " is back and Available.\n";
         }
     }
@@ -487,7 +492,7 @@ void handleEligibilityCheck(RobotFleet& fleet, OrderManager& orders, const Inven
     }
 }
 
-void robotsMenu(RobotFleet& fleet, const Graph& warehouse, OrderManager& orders, const Inventory& inventory) {
+void robotsMenu(RobotFleet& fleet, const Graph& warehouse, OrderManager& orders, const Inventory& inventory, HistoryManager& history) {
     while (true) {
         cout << "\n============ ROBOT FLEET ============\n";
         cout << "  1. Display all robots\n";
@@ -511,8 +516,8 @@ void robotsMenu(RobotFleet& fleet, const Graph& warehouse, OrderManager& orders,
             case 5: handleUpdateBattery(fleet); break;
             case 6: handleAssignTask(fleet); break;
             case 7: handleReleaseRobot(fleet); break;
-            case 8: handleMaintenance(fleet, true); break;
-            case 9: handleMaintenance(fleet, false); break;
+            case 8: handleMaintenance(fleet, true, history); break;
+            case 9: handleMaintenance(fleet, false, history); break;
             case 10: handleEligibilityCheck(fleet, orders, inventory); break;
             case 0: return;
         }
@@ -634,6 +639,31 @@ void chargingMenu(ChargingManager& charging, RobotFleet& fleet, const Graph& war
 }
 
 // ---------------------------------------------------------------
+// Module 8 menu: Operation History and Undo
+// ---------------------------------------------------------------
+
+void historyMenu(HistoryManager& history, Inventory& inventory, Graph& warehouse, RobotFleet& fleet) {
+    while (true) {
+        cout << "\n========== OPERATION HISTORY & UNDO ==========\n";
+        cout << "  Reversible: manual quantity updates, blocked pathways, maintenance changes.\n";
+        cout << "  1. Display most recent operation\n";
+        cout << "  2. Undo most recent operation\n";
+        cout << "  3. Discard the top entry (without undoing)\n";
+        cout << "  4. Display full history\n";
+        cout << "  0. Back to main menu\n";
+
+        int choice = readInt("Enter choice: ", 0, 4);
+        switch (choice) {
+            case 1: history.displayMostRecent(); break;
+            case 2: history.undo(inventory, warehouse, fleet); break;
+            case 3: history.discardTop(); break;
+            case 4: history.displayAll(); break;
+            case 0: return;
+        }
+    }
+}
+
+// ---------------------------------------------------------------
 // Program start
 // ---------------------------------------------------------------
 
@@ -665,6 +695,9 @@ int main() {
     ChargingManager charging;
     charging.load("data/chargers.txt", warehouse);
 
+    // Undo stack for reversible administrative operations
+    HistoryManager history;
+
     // Picking plans connect all the modules above
     PlanManager plans;
     Planner planner(warehouse, inventory, fleet, orders, plans);
@@ -679,23 +712,26 @@ int main() {
         cout << "  5. Robot Assignment & Picking Plans\n";
         cout << "  6. Order Picking & Delivery Execution\n";
         cout << "  7. Battery & Charging\n";
+        cout << "  8. Operation History & Undo\n";
         cout << "  0. Exit\n";
 
-        int choice = readInt("Enter choice: ", 0, 7);
+        int choice = readInt("Enter choice: ", 0, 8);
         if (choice == 1) {
-            layoutMenu(warehouse);
+            layoutMenu(warehouse, history);
         } else if (choice == 2) {
-            inventoryMenu(inventory, warehouse);
+            inventoryMenu(inventory, warehouse, history);
         } else if (choice == 3) {
             ordersMenu(orders, inventory, fleet, plans);
         } else if (choice == 4) {
-            robotsMenu(fleet, warehouse, orders, inventory);
+            robotsMenu(fleet, warehouse, orders, inventory, history);
         } else if (choice == 5) {
             planningMenu(planner, plans);
         } else if (choice == 6) {
             executionMenu(executor, plans);
         } else if (choice == 7) {
             chargingMenu(charging, fleet, warehouse);
+        } else if (choice == 8) {
+            historyMenu(history, inventory, warehouse, fleet);
         } else {
             cout << "Goodbye!\n";
             break;
