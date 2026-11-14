@@ -1,0 +1,11 @@
+# Format: RobotID,Type,LocationID,Battery(%),Capacity(kg)
+# Type: PICKER (up to 15 kg), CARRIER (15 to 30 kg), HEAVYDUTY (up to 60 kg)
+RB01,PICKER,L01,85,10
+RB02,CARRIER,L04,60,20
+RB03,HEAVYDUTY,L07,90,30
+# RB04 starts with low battery, to test the charging module
+RB04,CARRIER,L12,15,25
+RB05,PICKER,L11,100,15
+RB06,HEAVYDUTY,L10,45,60
+# RB07 is invalid on purpose: a Picker cannot have 20 kg capacity, so it is rejected
+RB07,PICKER,L02,80,20

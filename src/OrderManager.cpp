@@ -190,7 +190,7 @@ int OrderManager::enqueuePendingOrders() {
     return added;
 }
 
-bool OrderManager::cancelOrder(const string& orderId, Inventory& inventory) {
+bool OrderManager::cancelOrder(const string& orderId, Inventory& inventory, RobotFleet& fleet) {
     Order* order = findOrder(orderId);
     if (order == nullptr) {
         cout << "  Order " << orderId << " not found.\n";
@@ -209,6 +209,14 @@ bool OrderManager::cancelOrder(const string& orderId, Inventory& inventory) {
         // Reserved or Assigned: give back every unit this order reserved
         int released = inventory.releaseOrder(orderId);
         cout << "  Released " << released << " reserved units.\n";
+
+        // If a robot was assigned, it becomes free again
+        if (order->robotId != "") {
+            if (fleet.releaseRobot(order->robotId)) {
+                cout << "  Robot " << order->robotId << " released.\n";
+            }
+            order->robotId = "";
+        }
     }
 
     order->status = OrderStatus::Cancelled;

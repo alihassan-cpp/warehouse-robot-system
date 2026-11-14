@@ -12,7 +12,7 @@ O106,CU06,P106:5
 # O107: 6 chairs x 12 kg = 72 kg, heavier than any single robot can carry in one trip
 O107,CU07,P102:6
 O108,CU08,P108:2;P107:3
-# O109: contains a product above 10 kg per unit, so it needs a Heavy-duty robot
+# O109: a 15 kg unit, so Pickers cannot take it, but Heavy-duty robots are eligible
 O109,CU09,P110:1
 # O110: P101 appears twice and is merged into one item of 3 units
 O110,CU10,P109:4;P101:2;P101:1

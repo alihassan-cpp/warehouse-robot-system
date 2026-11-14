@@ -5,6 +5,7 @@
 #include "Inventory.h"
 #include "Allocation.h"
 #include "OrderManager.h"
+#include "RobotFleet.h"
 #include "Utils.h"
 using namespace std;
 
@@ -324,14 +325,14 @@ void handleAddItemsToOrder(OrderManager& orders, const Inventory& inventory) {
     }
 }
 
-void handleCancelOrder(OrderManager& orders, Inventory& inventory) {
+void handleCancelOrder(OrderManager& orders, Inventory& inventory, RobotFleet& fleet) {
     string orderId = readId("  Enter order ID to cancel: ");
-    if (orders.cancelOrder(orderId, inventory)) {
+    if (orders.cancelOrder(orderId, inventory, fleet)) {
         cout << "  Order " << orderId << " cancelled.\n";
     }
 }
 
-void ordersMenu(OrderManager& orders, Inventory& inventory) {
+void ordersMenu(OrderManager& orders, Inventory& inventory, RobotFleet& fleet) {
     while (true) {
         cout << "\n============ CUSTOMER ORDERS ============\n";
         cout << "  1. Display all orders\n";
@@ -358,11 +359,155 @@ void ordersMenu(OrderManager& orders, Inventory& inventory) {
                 break;
             case 6: orders.displayQueue(inventory); break;
             case 7: orders.displayFront(inventory); break;
-            case 8: handleCancelOrder(orders, inventory); break;
+            case 8: handleCancelOrder(orders, inventory, fleet); break;
             case 9:
                 cout << "  " << orders.removeCancelledFromQueue() << " cancelled orders removed from the queue.\n";
                 break;
             case 10: orders.displayPendingAndCompleted(inventory); break;
+            case 0: return;
+        }
+    }
+}
+
+// ---------------------------------------------------------------
+// Module 4 menu: Robot Fleet Management
+// ---------------------------------------------------------------
+
+void handleRegisterRobot(RobotFleet& fleet, const Graph& warehouse) {
+    string id = readId("  Enter robot ID (e.g. RB08): ");
+    string type = readId("  Enter type (PICKER / CARRIER / HEAVYDUTY): ");
+    string location = readId("  Enter starting location ID: ");
+    double battery = readDouble("  Enter battery % (0 - 100): ", 0, 100);
+    double capacity = readDouble("  Enter capacity in kg (Picker <=15, Carrier 15-30, Heavy-duty <=60): ", 0.1, 60);
+
+    Robot* robot = createRobot(type, id, location, battery, capacity);
+    if (robot == nullptr) {
+        cout << "  Unknown robot type '" << type << "'.\n";
+        return;
+    }
+    if (fleet.registerRobot(robot, warehouse)) {
+        cout << "  Robot " << id << " registered as a " << robot->typeName() << ".\n";
+    } else {
+        delete robot;
+    }
+}
+
+void handleUpdateBattery(RobotFleet& fleet) {
+    string id = readId("  Enter robot ID: ");
+    double battery = readDouble("  Enter new battery % (0 - 100): ", 0, 100);
+    if (fleet.updateBattery(id, battery)) {
+        cout << "  Battery of " << id << " set to " << battery << "%.\n";
+    }
+}
+
+void handleAssignTask(RobotFleet& fleet) {
+    string robotId = readId("  Enter robot ID: ");
+    string taskId = readId("  Enter task ID (e.g. T01): ");
+    // Orders are assigned through the picking plan (Module 5), which also reserves stock,
+    // so this option only accepts general tasks
+    if (!isValidId(taskId, "T")) {
+        cout << "  Task ID must look like T01. Orders are assigned by generating a picking plan.\n";
+        return;
+    }
+    if (fleet.assignTask(robotId, taskId)) {
+        cout << "  Robot " << robotId << " assigned to task " << taskId << ".\n";
+    }
+}
+
+void handleReleaseRobot(RobotFleet& fleet) {
+    string robotId = readId("  Enter robot ID: ");
+    Robot* robot = fleet.findRobot(robotId);
+    if (robot != nullptr && isValidId(robot->assignedTask, "O")) {
+        // An order is only finished when its last trip is executed (Module 6)
+        cout << "  " << robotId << " is working on order " << robot->assignedTask
+             << ". It is released automatically after the order's final trip, or when the order is cancelled.\n";
+        return;
+    }
+    if (fleet.releaseRobot(robotId)) {
+        cout << "  Robot " << robotId << " released and Available.\n";
+    }
+}
+
+void handleMaintenance(RobotFleet& fleet, bool goingIn) {
+    string robotId = readId("  Enter robot ID: ");
+    RobotStatus oldStatus;
+    if (goingIn) {
+        if (fleet.setUnavailable(robotId, oldStatus)) {
+            cout << "  Robot " << robotId << " is now Unavailable (maintenance).\n";
+        }
+    } else {
+        if (fleet.returnFromMaintenance(robotId, oldStatus)) {
+            cout << "  Robot " << robotId << " is back and Available.\n";
+        }
+    }
+}
+
+// Extra feature: shows how each robot type's rules apply to one order
+void handleEligibilityCheck(RobotFleet& fleet, OrderManager& orders, const Inventory& inventory) {
+    string orderId = readId("  Enter order ID: ");
+    Order* order = orders.findOrder(orderId);
+    if (order == nullptr) {
+        cout << "  Order " << orderId << " not found.\n";
+        return;
+    }
+
+    // Work out the order's total weight and heaviest single unit
+    double totalWeight = order->totalWeight(inventory);
+    double heaviestUnit = 0;
+    OrderItem* item = order->itemHead;
+    while (item != nullptr) {
+        Product* product = inventory.findProduct(item->productId);
+        if (product != nullptr && product->unitWeight > heaviestUnit) {
+            heaviestUnit = product->unitWeight;
+        }
+        item = item->next;
+    }
+
+    cout << "\n  Order " << orderId << ": total " << totalWeight << " kg, heaviest unit "
+         << heaviestUnit << " kg\n\n";
+    Robot* robot = fleet.getHead();
+    while (robot != nullptr) {
+        cout << "  " << robot->id << " (" << robot->typeName() << ", " << robot->capacity << " kg): ";
+        if (!robot->typeAllowsOrder(totalWeight, heaviestUnit)) {
+            cout << "not eligible by type rule\n";
+        } else if (!robot->canCarryUnit(heaviestUnit)) {
+            cout << "cannot lift the heaviest unit\n";
+        } else if (totalWeight <= robot->capacity) {
+            cout << "eligible, single trip possible\n";
+        } else {
+            cout << "eligible, needs more than one trip\n";
+        }
+        robot = robot->next;
+    }
+}
+
+void robotsMenu(RobotFleet& fleet, const Graph& warehouse, OrderManager& orders, const Inventory& inventory) {
+    while (true) {
+        cout << "\n============ ROBOT FLEET ============\n";
+        cout << "  1. Display all robots\n";
+        cout << "  2. Display available robots\n";
+        cout << "  3. Register a new robot\n";
+        cout << "  4. Search robot by ID\n";
+        cout << "  5. Update robot battery level\n";
+        cout << "  6. Assign a robot to a task\n";
+        cout << "  7. Release a robot after task completion\n";
+        cout << "  8. Send robot to maintenance (Unavailable)\n";
+        cout << "  9. Return robot from maintenance\n";
+        cout << " 10. Check robot eligibility for an order\n";
+        cout << "  0. Back to main menu\n";
+
+        int choice = readInt("Enter choice: ", 0, 10);
+        switch (choice) {
+            case 1: fleet.displayAll(); break;
+            case 2: fleet.displayAvailable(); break;
+            case 3: handleRegisterRobot(fleet, warehouse); break;
+            case 4: fleet.displayRobot(readId("  Enter robot ID: ")); break;
+            case 5: handleUpdateBattery(fleet); break;
+            case 6: handleAssignTask(fleet); break;
+            case 7: handleReleaseRobot(fleet); break;
+            case 8: handleMaintenance(fleet, true); break;
+            case 9: handleMaintenance(fleet, false); break;
+            case 10: handleEligibilityCheck(fleet, orders, inventory); break;
             case 0: return;
         }
     }
@@ -393,20 +538,27 @@ int main() {
     OrderManager orders;
     orders.loadOrders("data/orders.txt", inventory);
 
+    // Robots need valid locations
+    RobotFleet fleet;
+    fleet.loadRobots("data/robots.txt", warehouse);
+
     while (true) {
         cout << "\n================== MAIN MENU ==================\n";
         cout << "  1. Warehouse Layout & Pathways\n";
         cout << "  2. Product Inventory & Racks\n";
         cout << "  3. Customer Orders\n";
+        cout << "  4. Robot Fleet\n";
         cout << "  0. Exit\n";
 
-        int choice = readInt("Enter choice: ", 0, 3);
+        int choice = readInt("Enter choice: ", 0, 4);
         if (choice == 1) {
             layoutMenu(warehouse);
         } else if (choice == 2) {
             inventoryMenu(inventory, warehouse);
         } else if (choice == 3) {
-            ordersMenu(orders, inventory);
+            ordersMenu(orders, inventory, fleet);
+        } else if (choice == 4) {
+            robotsMenu(fleet, warehouse, orders, inventory);
         } else {
             cout << "Goodbye!\n";
             break;

@@ -5,6 +5,7 @@
 #include "Order.h"
 #include "Queue.h"
 #include "Inventory.h"
+#include "RobotFleet.h"
 using namespace std;
 
 // Module 3 manager.
@@ -44,8 +45,8 @@ public:
     int enqueuePendingOrders();
 
     // Cancels an order. Pending: leaves the queue.
-    // Reserved/Assigned: reservations are released (the robot is freed by the caller).
-    bool cancelOrder(const string& orderId, Inventory& inventory);
+    // Reserved/Assigned: all reservations are released and the robot is freed.
+    bool cancelOrder(const string& orderId, Inventory& inventory, RobotFleet& fleet);
 
     // Removes any Cancelled orders still sitting in the queue
     int removeCancelledFromQueue();
