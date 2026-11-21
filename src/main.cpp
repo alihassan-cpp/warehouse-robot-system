@@ -12,6 +12,7 @@
 #include "ChargingManager.h"
 #include "History.h"
 #include "Utils.h"
+#include "UI.h"
 using namespace std;
 
 // ---------------------------------------------------------------
@@ -112,17 +113,17 @@ void handleShortestRoute(Graph& warehouse) {
 
 void layoutMenu(Graph& warehouse, HistoryManager& history) {
     while (true) {
-        cout << "\n========== WAREHOUSE LAYOUT & PATHWAYS ==========\n";
-        cout << "  1. Display all locations and connections\n";
-        cout << "  2. Add a new location\n";
-        cout << "  3. Add a pathway\n";
-        cout << "  4. Remove a pathway\n";
-        cout << "  5. Block a pathway\n";
-        cout << "  6. Reopen a blocked pathway\n";
-        cout << "  7. Search location by ID\n";
-        cout << "  8. Check if two locations are connected (BFS)\n";
-        cout << "  9. Find shortest route (Dijkstra)\n";
-        cout << "  0. Back to main menu\n";
+        UI::header("WAREHOUSE LAYOUT & PATHWAYS");
+        UI::option(1, "Display all locations and connections");
+        UI::option(2, "Add a new location");
+        UI::option(3, "Add a pathway");
+        UI::option(4, "Remove a pathway");
+        UI::option(5, "Block a pathway");
+        UI::option(6, "Reopen a blocked pathway");
+        UI::option(7, "Search location by ID");
+        UI::option(8, "Check if two locations are connected (BFS)");
+        UI::option(9, "Find shortest route (Dijkstra)");
+        UI::option(0, "Back to main menu");
 
         int choice = readInt("Enter choice: ", 0, 9);
         switch (choice) {
@@ -231,21 +232,21 @@ void handlePreviewAllocation(Inventory& inventory, Graph& warehouse) {
 
 void inventoryMenu(Inventory& inventory, Graph& warehouse, HistoryManager& history) {
     while (true) {
-        cout << "\n========== PRODUCT INVENTORY & RACKS ==========\n";
-        cout << "  1. Display all products\n";
-        cout << "  2. Display AVL tree structure\n";
-        cout << "  3. Insert a new product\n";
-        cout << "  4. Delete a product\n";
-        cout << "  5. Search product by ID (with its racks)\n";
-        cout << "  6. Add a rack entry to a product\n";
-        cout << "  7. Update quantity in a rack\n";
-        cout << "  8. Remove a rack entry\n";
-        cout << "  9. Total stock of a product\n";
-        cout << " 10. Available stock of a product\n";
-        cout << " 11. Low stock report (below reorder level)\n";
-        cout << " 12. Display all racks and locations\n";
-        cout << " 13. Preview rack allocation for a quantity\n";
-        cout << "  0. Back to main menu\n";
+        UI::header("PRODUCT INVENTORY & RACKS");
+        UI::option(1, "Display all products");
+        UI::option(2, "Display AVL tree structure");
+        UI::option(3, "Insert a new product");
+        UI::option(4, "Delete a product");
+        UI::option(5, "Search product by ID (with its racks)");
+        UI::option(6, "Add a rack entry to a product");
+        UI::option(7, "Update quantity in a rack");
+        UI::option(8, "Remove a rack entry");
+        UI::option(9, "Total stock of a product");
+        UI::option(10, "Available stock of a product");
+        UI::option(11, "Low stock report (below reorder level)");
+        UI::option(12, "Display all racks and locations");
+        UI::option(13, "Preview rack allocation for a quantity");
+        UI::option(0, "Back to main menu");
 
         int choice = readInt("Enter choice: ", 0, 13);
         switch (choice) {
@@ -343,18 +344,18 @@ void handleCancelOrder(OrderManager& orders, Inventory& inventory, RobotFleet& f
 
 void ordersMenu(OrderManager& orders, Inventory& inventory, RobotFleet& fleet, PlanManager& plans) {
     while (true) {
-        cout << "\n============ CUSTOMER ORDERS ============\n";
-        cout << "  1. Display all orders\n";
-        cout << "  2. Add a new order\n";
-        cout << "  3. Add products to an order\n";
-        cout << "  4. Search order by ID\n";
-        cout << "  5. Enqueue pending orders into the queue\n";
-        cout << "  6. Display pending queue (front to rear)\n";
-        cout << "  7. Peek front order and queue size\n";
-        cout << "  8. Cancel an order\n";
-        cout << "  9. Remove cancelled orders from the queue\n";
-        cout << " 10. Display pending and completed orders\n";
-        cout << "  0. Back to main menu\n";
+        UI::header("CUSTOMER ORDERS");
+        UI::option(1, "Display all orders");
+        UI::option(2, "Add a new order");
+        UI::option(3, "Add products to an order");
+        UI::option(4, "Search order by ID");
+        UI::option(5, "Enqueue pending orders into the queue");
+        UI::option(6, "Display pending queue (front to rear)");
+        UI::option(7, "Peek front order and queue size");
+        UI::option(8, "Cancel an order");
+        UI::option(9, "Remove cancelled orders from the queue");
+        UI::option(10, "Display pending and completed orders");
+        UI::option(0, "Back to main menu");
 
         int choice = readInt("Enter choice: ", 0, 10);
         switch (choice) {
@@ -494,18 +495,18 @@ void handleEligibilityCheck(RobotFleet& fleet, OrderManager& orders, const Inven
 
 void robotsMenu(RobotFleet& fleet, const Graph& warehouse, OrderManager& orders, const Inventory& inventory, HistoryManager& history) {
     while (true) {
-        cout << "\n============ ROBOT FLEET ============\n";
-        cout << "  1. Display all robots\n";
-        cout << "  2. Display available robots\n";
-        cout << "  3. Register a new robot\n";
-        cout << "  4. Search robot by ID\n";
-        cout << "  5. Update robot battery level\n";
-        cout << "  6. Assign a robot to a task\n";
-        cout << "  7. Release a robot after task completion\n";
-        cout << "  8. Send robot to maintenance (Unavailable)\n";
-        cout << "  9. Return robot from maintenance\n";
-        cout << " 10. Check robot eligibility for an order\n";
-        cout << "  0. Back to main menu\n";
+        UI::header("ROBOT FLEET");
+        UI::option(1, "Display all robots");
+        UI::option(2, "Display available robots");
+        UI::option(3, "Register a new robot");
+        UI::option(4, "Search robot by ID");
+        UI::option(5, "Update robot battery level");
+        UI::option(6, "Assign a robot to a task");
+        UI::option(7, "Release a robot after task completion");
+        UI::option(8, "Send robot to maintenance (Unavailable)");
+        UI::option(9, "Return robot from maintenance");
+        UI::option(10, "Check robot eligibility for an order");
+        UI::option(0, "Back to main menu");
 
         int choice = readInt("Enter choice: ", 0, 10);
         switch (choice) {
@@ -530,11 +531,11 @@ void robotsMenu(RobotFleet& fleet, const Graph& warehouse, OrderManager& orders,
 
 void planningMenu(Planner& planner, PlanManager& plans) {
     while (true) {
-        cout << "\n========== ROBOT ASSIGNMENT & PICKING PLANS ==========\n";
-        cout << "  1. Process next order from the queue\n";
-        cout << "  2. Preview plan for a specific order (no reservation)\n";
-        cout << "  3. Display all assigned picking plans\n";
-        cout << "  0. Back to main menu\n";
+        UI::header("ROBOT ASSIGNMENT & PICKING PLANS");
+        UI::option(1, "Process next order from the queue");
+        UI::option(2, "Preview plan for a specific order (no reservation)");
+        UI::option(3, "Display all assigned picking plans");
+        UI::option(0, "Back to main menu");
 
         int choice = readInt("Enter choice: ", 0, 3);
         switch (choice) {
@@ -552,10 +553,10 @@ void planningMenu(Planner& planner, PlanManager& plans) {
 
 void executionMenu(Executor& executor, PlanManager& plans) {
     while (true) {
-        cout << "\n========== ORDER PICKING & DELIVERY ==========\n";
-        cout << "  1. Execute picking task for an assigned order\n";
-        cout << "  2. Display all assigned picking plans\n";
-        cout << "  0. Back to main menu\n";
+        UI::header("ORDER PICKING & DELIVERY");
+        UI::option(1, "Execute picking task for an assigned order");
+        UI::option(2, "Display all assigned picking plans");
+        UI::option(0, "Back to main menu");
 
         int choice = readInt("Enter choice: ", 0, 2);
         if (choice == 1) {
@@ -598,16 +599,16 @@ void handleFindStation(ChargingManager& charging, RobotFleet& fleet, const Graph
 
 void chargingMenu(ChargingManager& charging, RobotFleet& fleet, const Graph& warehouse) {
     while (true) {
-        cout << "\n========== BATTERY & CHARGING ==========\n";
-        cout << "  1. Display all charging stations\n";
-        cout << "  2. Identify robots requiring charging\n";
-        cout << "  3. Find a reachable charging station for a robot\n";
-        cout << "  4. Check slot availability at a station\n";
-        cout << "  5. Send robot to charge (starts charging or joins the queue)\n";
-        cout << "  6. Complete charging of a robot\n";
-        cout << "  7. Remove a robot from a charging queue\n";
-        cout << "  8. Update robot battery level\n";
-        cout << "  0. Back to main menu\n";
+        UI::header("BATTERY & CHARGING");
+        UI::option(1, "Display all charging stations");
+        UI::option(2, "Identify robots requiring charging");
+        UI::option(3, "Find a reachable charging station for a robot");
+        UI::option(4, "Check slot availability at a station");
+        UI::option(5, "Send robot to charge (starts charging or joins the queue)");
+        UI::option(6, "Complete charging of a robot");
+        UI::option(7, "Remove a robot from a charging queue");
+        UI::option(8, "Update robot battery level");
+        UI::option(0, "Back to main menu");
 
         int choice = readInt("Enter choice: ", 0, 8);
         if (choice == 0) {
@@ -644,13 +645,13 @@ void chargingMenu(ChargingManager& charging, RobotFleet& fleet, const Graph& war
 
 void historyMenu(HistoryManager& history, Inventory& inventory, Graph& warehouse, RobotFleet& fleet) {
     while (true) {
-        cout << "\n========== OPERATION HISTORY & UNDO ==========\n";
+        UI::header("OPERATION HISTORY & UNDO");
         cout << "  Reversible: manual quantity updates, blocked pathways, maintenance changes.\n";
-        cout << "  1. Display most recent operation\n";
-        cout << "  2. Undo most recent operation\n";
-        cout << "  3. Discard the top entry (without undoing)\n";
-        cout << "  4. Display full history\n";
-        cout << "  0. Back to main menu\n";
+        UI::option(1, "Display most recent operation");
+        UI::option(2, "Undo most recent operation");
+        UI::option(3, "Discard the top entry (without undoing)");
+        UI::option(4, "Display full history");
+        UI::option(0, "Back to main menu");
 
         int choice = readInt("Enter choice: ", 0, 4);
         switch (choice) {
@@ -668,9 +669,7 @@ void historyMenu(HistoryManager& history, Inventory& inventory, Graph& warehouse
 // ---------------------------------------------------------------
 
 int main() {
-    cout << "=================================================\n";
-    cout << "   INTELLIGENT WAREHOUSE ROBOT SYSTEM\n";
-    cout << "=================================================\n";
+    UI::banner("INTELLIGENT WAREHOUSE ROBOT SYSTEM");
 
     // All data comes from files; nothing is hardcoded.
     // Run the program from the project folder so "data/..." can be found.
@@ -704,16 +703,16 @@ int main() {
     Executor executor(warehouse, inventory, fleet, orders, plans);
 
     while (true) {
-        cout << "\n================== MAIN MENU ==================\n";
-        cout << "  1. Warehouse Layout & Pathways\n";
-        cout << "  2. Product Inventory & Racks\n";
-        cout << "  3. Customer Orders\n";
-        cout << "  4. Robot Fleet\n";
-        cout << "  5. Robot Assignment & Picking Plans\n";
-        cout << "  6. Order Picking & Delivery Execution\n";
-        cout << "  7. Battery & Charging\n";
-        cout << "  8. Operation History & Undo\n";
-        cout << "  0. Exit\n";
+        UI::header("MAIN MENU");
+        UI::option(1, "Warehouse Layout & Pathways");
+        UI::option(2, "Product Inventory & Racks");
+        UI::option(3, "Customer Orders");
+        UI::option(4, "Robot Fleet");
+        UI::option(5, "Robot Assignment & Picking Plans");
+        UI::option(6, "Order Picking & Delivery Execution");
+        UI::option(7, "Battery & Charging");
+        UI::option(8, "Operation History & Undo");
+        UI::option(0, "Exit");
 
         int choice = readInt("Enter choice: ", 0, 8);
         if (choice == 1) {
