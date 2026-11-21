@@ -1,4 +1,5 @@
 #include "OrderManager.h"
+#include "UI.h"
 #include "Utils.h"
 #include <iostream>
 #include <iomanip>
@@ -105,15 +106,15 @@ bool OrderManager::loadOrders(const string& fileName, const Inventory& inventory
 
 bool OrderManager::addOrder(Order* order, const Inventory& inventory) {
     if (!isValidId(order->orderId, "O")) {
-        cout << "  Invalid order ID '" << order->orderId << "'. It must look like O101.\n";
+        cout << UI::err() << "Invalid order ID '" << order->orderId << "'. It must look like O101.\n";
         return false;
     }
     if (!isValidId(order->customerId, "CU")) {
-        cout << "  Invalid customer ID '" << order->customerId << "'. It must look like CU12.\n";
+        cout << UI::err() << "Invalid customer ID '" << order->customerId << "'. It must look like CU12.\n";
         return false;
     }
     if (findOrder(order->orderId) != nullptr) {
-        cout << "  Order " << order->orderId << " already exists. Order IDs must be unique.\n";
+        cout << UI::err() << "Order " << order->orderId << " already exists. Order IDs must be unique.\n";
         return false;
     }
     if (order->itemHead == nullptr) {
@@ -125,7 +126,7 @@ bool OrderManager::addOrder(Order* order, const Inventory& inventory) {
     OrderItem* item = order->itemHead;
     while (item != nullptr) {
         if (inventory.findProduct(item->productId) == nullptr || item->quantity <= 0) {
-            cout << "  Invalid item " << item->productId << " in order " << order->orderId << ".\n";
+            cout << UI::err() << "Invalid item " << item->productId << " in order " << order->orderId << ".\n";
             return false;
         }
         item = item->next;
@@ -141,20 +142,20 @@ bool OrderManager::addOrder(Order* order, const Inventory& inventory) {
 bool OrderManager::addItemToOrder(const string& orderId, const string& productId, int quantity, const Inventory& inventory) {
     Order* order = findOrder(orderId);
     if (order == nullptr) {
-        cout << "  Order " << orderId << " not found.\n";
+        cout << UI::err() << "Order " << orderId << " not found.\n";
         return false;
     }
     if (order->status != OrderStatus::Pending) {
-        cout << "  Items can only be added to a Pending order (this one is "
+        cout << UI::err() << "Items can only be added to a Pending order (this one is "
              << statusToString(order->status) << ").\n";
         return false;
     }
     if (inventory.findProduct(productId) == nullptr) {
-        cout << "  Product " << productId << " does not exist.\n";
+        cout << UI::err() << "Product " << productId << " does not exist.\n";
         return false;
     }
     if (quantity <= 0) {
-        cout << "  Quantity must be positive.\n";
+        cout << UI::err() << "Quantity must be positive.\n";
         return false;
     }
 
@@ -193,7 +194,7 @@ int OrderManager::enqueuePendingOrders() {
 bool OrderManager::cancelOrder(const string& orderId, Inventory& inventory, RobotFleet& fleet) {
     Order* order = findOrder(orderId);
     if (order == nullptr) {
-        cout << "  Order " << orderId << " not found.\n";
+        cout << UI::err() << "Order " << orderId << " not found.\n";
         return false;
     }
     if (!order->canBeCancelled()) {
@@ -208,12 +209,12 @@ bool OrderManager::cancelOrder(const string& orderId, Inventory& inventory, Robo
     } else {
         // Reserved or Assigned: give back every unit this order reserved
         int released = inventory.releaseOrder(orderId);
-        cout << "  Released " << released << " reserved units.\n";
+        cout << UI::good() << "Released " << released << " reserved units.\n";
 
         // If a robot was assigned, it becomes free again
         if (order->robotId != "") {
             if (fleet.releaseRobot(order->robotId)) {
-                cout << "  Robot " << order->robotId << " released.\n";
+                cout << UI::good() << "Robot " << order->robotId << " released.\n";
             }
             order->robotId = "";
         }
@@ -258,7 +259,7 @@ void OrderManager::returnToFrontOfQueue(Order* order) {
 
 void OrderManager::displayOrderRow(const Order* order, const Inventory& inventory) const {
     cout << "  " << left << setw(6) << order->orderId << setw(7) << order->customerId
-         << setw(21) << statusToString(order->status)
+         << UI::start(UI::statusColor(statusToString(order->status))) << setw(21) << statusToString(order->status) << UI::reset()
          << right << setw(6) << fixed << setprecision(1) << order->totalWeight(inventory) << " kg   ";
     order->displayItems();
     cout << "\n";
@@ -269,9 +270,9 @@ void OrderManager::displayAll(const Inventory& inventory) const {
         cout << "  No orders.\n";
         return;
     }
-    cout << "\n  " << left << setw(6) << "Order" << setw(7) << "Cust" << setw(21) << "Status"
-         << right << setw(9) << "Weight" << "   Items\n";
-    cout << "  ----------------------------------------------------------------------\n";
+    cout << "\n  " << UI::start("1;36") << left << setw(6) << "Order" << setw(7) << "Cust" << setw(21) << "Status"
+         << right << setw(9) << "Weight" << "   Items" << UI::reset() << "\n";
+    cout << UI::start("90") << "  ----------------------------------------------------------------------" << UI::reset() << "\n";
     Order* current = head;
     while (current != nullptr) {
         displayOrderRow(current, inventory);
@@ -283,7 +284,7 @@ void OrderManager::displayAll(const Inventory& inventory) const {
 void OrderManager::displayOrder(const string& orderId, const Inventory& inventory) const {
     Order* order = findOrder(orderId);
     if (order == nullptr) {
-        cout << "  Order " << orderId << " not found.\n";
+        cout << UI::err() << "Order " << orderId << " not found.\n";
         return;
     }
     cout << "\n  Order:     " << order->orderId << "\n";
@@ -304,7 +305,7 @@ void OrderManager::displayOrder(const string& orderId, const Inventory& inventor
 
 void OrderManager::displayQueue(const Inventory& inventory) const {
     if (pendingQueue.isEmpty()) {
-        cout << "  The pending order queue is empty.\n";
+        cout << UI::note() << "The pending order queue is empty.\n";
         return;
     }
     cout << "\n  Pending queue (front = oldest, processed first):\n";
@@ -330,7 +331,7 @@ void OrderManager::displayQueue(const Inventory& inventory) const {
 void OrderManager::displayFront(const Inventory& inventory) const {
     Order* front;
     if (!pendingQueue.peek(front)) {
-        cout << "  The pending order queue is empty.\n";
+        cout << UI::note() << "The pending order queue is empty.\n";
         return;
     }
     cout << "\n  Front of queue (next to be processed):\n ";

@@ -1,4 +1,5 @@
 #include "RackDirectory.h"
+#include "UI.h"
 #include "Utils.h"
 #include <iostream>
 #include <fstream>
@@ -62,17 +63,17 @@ bool RackDirectory::load(const string& fileName, const Graph& warehouse) {
 
 bool RackDirectory::addRack(const string& rackId, const string& locationId, const Graph& warehouse) {
     if (!isValidId(rackId, "RK")) {
-        cout << "  Invalid rack ID '" << rackId << "'. It must look like RK01.\n";
+        cout << UI::err() << "Invalid rack ID '" << rackId << "'. It must look like RK01.\n";
         return false;
     }
     if (find(rackId) != nullptr) {
-        cout << "  Rack " << rackId << " already exists.\n";
+        cout << UI::err() << "Rack " << rackId << " already exists.\n";
         return false;
     }
 
     Location* location = warehouse.findLocation(locationId);
     if (location == nullptr) {
-        cout << "  Location " << locationId << " does not exist.\n";
+        cout << UI::err() << "Location " << locationId << " does not exist.\n";
         return false;
     }
     if (location->type != "RACK") {

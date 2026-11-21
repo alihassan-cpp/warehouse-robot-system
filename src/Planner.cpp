@@ -1,4 +1,5 @@
 #include "Planner.h"
+#include "UI.h"
 #include "Utils.h"
 #include <iostream>
 #include <iomanip>
@@ -502,7 +503,7 @@ bool Planner::confirmAndAssign(Order* order, PickingPlan* plan) {
 void Planner::processNextOrder() {
     Queue<Order*>& queue = orders.getQueue();
     if (queue.isEmpty()) {
-        cout << "  The pending order queue is empty.\n";
+        cout << UI::note() << "The pending order queue is empty.\n";
         return;
     }
 
@@ -542,7 +543,7 @@ void Planner::processNextOrder() {
         cout << "  2. Reject plan (order stays Pending)\n";
         if (readInt("  Choice: ", 1, 2) == 2) {
             delete plan;
-            cout << "  Plan rejected. " << order->orderId << " stays in the queue.\n";
+            cout << UI::err() << "Plan rejected. " << order->orderId << " stays in the queue.\n";
             return;
         }
 
@@ -561,7 +562,7 @@ void Planner::processNextOrder() {
 void Planner::previewOrder(const string& orderId) const {
     Order* order = orders.findOrder(orderId);
     if (order == nullptr) {
-        cout << "  Order " << orderId << " not found.\n";
+        cout << UI::err() << "Order " << orderId << " not found.\n";
         return;
     }
     if (order->status != OrderStatus::Pending) {

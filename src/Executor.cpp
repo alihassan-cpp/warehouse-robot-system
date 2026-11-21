@@ -1,4 +1,5 @@
 #include "Executor.h"
+#include "UI.h"
 #include "Utils.h"
 #include <iostream>
 #include <iomanip>
@@ -38,7 +39,7 @@ bool Executor::validateTrip(const PickingPlan* plan, const Trip* trip, const Rob
 
     // The robot must still be working on this order
     if (robot->assignedTask != plan->orderId || robot->status != RobotStatus::Assigned) {
-        cout << "  Check failed: robot " << robot->id << " is not assigned to " << plan->orderId << ".\n";
+        cout << UI::err() << "Check failed: robot " << robot->id << " is not assigned to " << plan->orderId << ".\n";
         return false;
     }
 
@@ -53,7 +54,7 @@ bool Executor::validateTrip(const PickingPlan* plan, const Trip* trip, const Rob
     TripStop* stop = trip->stops;
     while (stop != nullptr) {
         if (!routeIsOpen(*stop->routeIn)) {
-            cout << "  Check failed: the route to rack " << stop->rackId << " uses a blocked or removed pathway.\n";
+            cout << UI::err() << "Check failed: the route to rack " << stop->rackId << " uses a blocked or removed pathway.\n";
             ok = false;
         }
         stop = stop->next;
@@ -74,7 +75,7 @@ bool Executor::validateTrip(const PickingPlan* plan, const Trip* trip, const Rob
 
     // 3. Capacity
     if (trip->weight > robot->capacity) {
-        cout << "  Check failed: trip weight " << trip->weight << " kg exceeds capacity "
+        cout << UI::err() << "Check failed: trip weight " << trip->weight << " kg exceeds capacity "
              << robot->capacity << " kg.\n";
         ok = false;
     }
@@ -83,7 +84,7 @@ bool Executor::validateTrip(const PickingPlan* plan, const Trip* trip, const Rob
     stop = trip->stops;
     while (stop != nullptr) {
         if (stop->collected) {
-            cout << "  Check failed: rack " << stop->rackId << " was already collected.\n";
+            cout << UI::err() << "Check failed: rack " << stop->rackId << " was already collected.\n";
             ok = false;
         }
         Pickup* pickup = stop->pickups;
@@ -94,7 +95,7 @@ bool Executor::validateTrip(const PickingPlan* plan, const Trip* trip, const Rob
                 rack = product->findRack(stop->rackId);
             }
             if (rack == nullptr) {
-                cout << "  Check failed: " << pickup->productId << " is no longer in rack " << stop->rackId << ".\n";
+                cout << UI::err() << "Check failed: " << pickup->productId << " is no longer in rack " << stop->rackId << ".\n";
                 ok = false;
             } else if (rack->reservedBy(plan->orderId) < pickup->quantity || rack->totalQuantity < pickup->quantity) {
                 cout << "  Check failed: rack " << stop->rackId << " does not hold the " << pickup->quantity
@@ -153,13 +154,13 @@ void Executor::applyTrip(PickingPlan* plan, Trip* trip, Robot* robot) {
 
     cout << "  Delivered to packing station " << trip->packingStation << ". Robot " << robot->id
          << " battery now " << fixed << setprecision(1) << robot->battery << "%.\n";
-    cout << "  Order " << order->orderId << " is now " << statusToString(order->status) << ".\n";
+    cout << UI::good() << "Order " << order->orderId << " is now " << statusToString(order->status) << ".\n";
 
     // After the final trip, release the robot and retire the plan
     if (nextTrip(plan) == nullptr) {
         fleet.releaseRobot(robot->id);
         order->robotId = "";
-        cout << "  All trips done. Robot " << robot->id << " released.\n";
+        cout << UI::good() << "All trips done. Robot " << robot->id << " released.\n";
         if (order->status != OrderStatus::Completed) {
             cout << "  (Only part of the order could be reserved, so it stays Partially Fulfilled.)\n";
         }
@@ -179,7 +180,7 @@ bool Executor::recalculateRoutes(PickingPlan* plan, Robot* robot) {
         TripStop* stop = trip->stops;
         while (stop != nullptr) {
             if (warehouse.shortestDistance(here, stop->locationId) < 0) {
-                cout << "  Rack " << stop->rackId << " (" << stop->locationId << ") is now unreachable.\n";
+                cout << UI::err() << "Rack " << stop->rackId << " (" << stop->locationId << ") is now unreachable.\n";
                 cout << "  Choose Cancel Assignment so the order can be re-planned.\n";
                 return false;
             }
@@ -187,7 +188,7 @@ bool Executor::recalculateRoutes(PickingPlan* plan, Robot* robot) {
             stop = stop->next;
         }
         if (warehouse.shortestDistance(here, trip->packingStation) < 0) {
-            cout << "  Packing station " << trip->packingStation << " is now unreachable.\n";
+            cout << UI::err() << "Packing station " << trip->packingStation << " is now unreachable.\n";
             cout << "  Choose Cancel Assignment so the order can be re-planned.\n";
             return false;
         }
@@ -233,7 +234,7 @@ void Executor::cancelAssignment(PickingPlan* plan) {
     orders.returnToFrontOfQueue(order);
     plans.remove(orderId);
 
-    cout << "  Assignment cancelled. " << released << " reserved units released, robot freed.\n";
+    cout << UI::good() << "Assignment cancelled. " << released << " reserved units released, robot freed.\n";
     cout << "  " << orderId << " is Pending again at the front of the queue (delivered items stay delivered).\n";
 }
 
@@ -252,7 +253,7 @@ void Executor::displayTaskScreen(const PickingPlan* plan, const Trip* trip) cons
 void Executor::listAssignedOrders() const {
     PickingPlan* plan = plans.getHead();
     if (plan == nullptr) {
-        cout << "  No orders are assigned right now. Generate a plan first (menu 5).\n";
+        cout << UI::note() << "No orders are assigned right now. Generate a plan first (menu 5).\n";
         return;
     }
     cout << "\n  Assigned orders:\n";
@@ -276,7 +277,7 @@ void Executor::runOrder(const string& orderId) {
         // Look the plan up again each time; it disappears once the order is finished
         PickingPlan* plan = plans.find(orderId);
         if (plan == nullptr) {
-            cout << "  No assigned plan for " << orderId << ".\n";
+            cout << UI::err() << "No assigned plan for " << orderId << ".\n";
             return;
         }
         Robot* robot = fleet.findRobot(plan->robotId);

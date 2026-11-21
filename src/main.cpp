@@ -24,7 +24,7 @@ void handleAddLocation(Graph& warehouse) {
     string type = toUpper(readLine("  Enter type (RACK / PACKING / CHARGING): "));
     string name = readLine("  Enter location name: ");
     if (warehouse.addLocation(id, type, name)) {
-        cout << "  Location " << id << " added.\n";
+        cout << UI::good() << "Location " << id << " added.\n";
     }
 }
 
@@ -33,7 +33,7 @@ void handleAddPathway(Graph& warehouse) {
     string toId = readId("  Enter second location ID: ");
     int distance = readInt("  Enter distance (1 - 10000): ", 1, 10000);
     if (warehouse.addPathway(fromId, toId, distance, false)) {
-        cout << "  Pathway " << fromId << " <-> " << toId << " added with distance " << distance << ".\n";
+        cout << UI::good() << "Pathway " << fromId << " <-> " << toId << " added with distance " << distance << ".\n";
     }
 }
 
@@ -41,7 +41,7 @@ void handleRemovePathway(Graph& warehouse) {
     string fromId = readId("  Enter first location ID: ");
     string toId = readId("  Enter second location ID: ");
     if (warehouse.removePathway(fromId, toId)) {
-        cout << "  Pathway " << fromId << " <-> " << toId << " removed.\n";
+        cout << UI::good() << "Pathway " << fromId << " <-> " << toId << " removed.\n";
     }
 }
 
@@ -50,7 +50,7 @@ void handleBlockPathway(Graph& warehouse, HistoryManager& history) {
     string toId = readId("  Enter second location ID: ");
     if (warehouse.blockPathway(fromId, toId)) {
         history.recordBlock(fromId, toId); // reversible, so it goes on the undo stack
-        cout << "  Pathway " << fromId << " <-> " << toId << " is now BLOCKED.\n";
+        cout << UI::good() << "Pathway " << fromId << " <-> " << toId << " is now BLOCKED.\n";
     }
 }
 
@@ -58,7 +58,7 @@ void handleReopenPathway(Graph& warehouse) {
     string fromId = readId("  Enter first location ID: ");
     string toId = readId("  Enter second location ID: ");
     if (warehouse.reopenPathway(fromId, toId)) {
-        cout << "  Pathway " << fromId << " <-> " << toId << " is now OPEN.\n";
+        cout << UI::good() << "Pathway " << fromId << " <-> " << toId << " is now OPEN.\n";
     }
 }
 
@@ -72,11 +72,11 @@ void handleCheckConnected(Graph& warehouse) {
     string toId = readId("  Enter end location ID: ");
 
     if (warehouse.findLocation(fromId) == nullptr) {
-        cout << "  Location " << fromId << " does not exist.\n";
+        cout << UI::err() << "Location " << fromId << " does not exist.\n";
         return;
     }
     if (warehouse.findLocation(toId) == nullptr) {
-        cout << "  Location " << toId << " does not exist.\n";
+        cout << UI::err() << "Location " << toId << " does not exist.\n";
         return;
     }
 
@@ -93,11 +93,11 @@ void handleShortestRoute(Graph& warehouse) {
 
     // The PDF requires a clear failure if either location is missing
     if (warehouse.findLocation(fromId) == nullptr) {
-        cout << "  Route failed: start location " << fromId << " does not exist.\n";
+        cout << UI::err() << "Route failed: start location " << fromId << " does not exist.\n";
         return;
     }
     if (warehouse.findLocation(toId) == nullptr) {
-        cout << "  Route failed: end location " << toId << " does not exist.\n";
+        cout << UI::err() << "Route failed: end location " << toId << " does not exist.\n";
         return;
     }
 
@@ -107,7 +107,7 @@ void handleShortestRoute(Graph& warehouse) {
         route.display();
         cout << "\n  Total distance: " << route.getTotalDistance() << " units\n";
     } else {
-        cout << "  No route exists between " << fromId << " and " << toId << ".\n";
+        cout << UI::err() << "No route exists between " << fromId << " and " << toId << ".\n";
     }
 }
 
@@ -151,14 +151,14 @@ void handleInsertProduct(Inventory& inventory) {
     double weight = readDouble("  Enter unit weight in kg (0.1 - 60): ", 0.1, 60);
     int reorder = readInt("  Enter reorder level (0 - 100000): ", 0, 100000);
     if (inventory.addProduct(id, name, weight, reorder)) {
-        cout << "  Product " << id << " inserted into the AVL tree.\n";
+        cout << UI::good() << "Product " << id << " inserted into the AVL tree.\n";
     }
 }
 
 void handleDeleteProduct(Inventory& inventory) {
     string id = readId("  Enter product ID to delete: ");
     if (inventory.deleteProduct(id)) {
-        cout << "  Product " << id << " deleted and tree rebalanced.\n";
+        cout << UI::good() << "Product " << id << " deleted and tree rebalanced.\n";
     }
 }
 
@@ -167,7 +167,7 @@ void handleAddRackEntry(Inventory& inventory) {
     string rackId = readId("  Enter rack ID (e.g. RK05): ");
     int quantity = readInt("  Enter quantity (0 - 100000): ", 0, 100000);
     if (inventory.addRackEntry(productId, rackId, quantity)) {
-        cout << "  Rack " << rackId << " added to " << productId << " with " << quantity << " units.\n";
+        cout << UI::good() << "Rack " << rackId << " added to " << productId << " with " << quantity << " units.\n";
     }
 }
 
@@ -186,14 +186,14 @@ void handleRemoveRackEntry(Inventory& inventory) {
     string productId = readId("  Enter product ID: ");
     string rackId = readId("  Enter rack ID to remove: ");
     if (inventory.removeRackEntry(productId, rackId)) {
-        cout << "  Rack " << rackId << " removed from " << productId << ".\n";
+        cout << UI::good() << "Rack " << rackId << " removed from " << productId << ".\n";
     }
 }
 
 void handleStockTotals(Inventory& inventory, bool availableOnly) {
     string productId = readId("  Enter product ID: ");
     if (inventory.findProduct(productId) == nullptr) {
-        cout << "  Product " << productId << " not found.\n";
+        cout << UI::err() << "Product " << productId << " not found.\n";
         return;
     }
     if (availableOnly) {
@@ -208,13 +208,13 @@ void handleStockTotals(Inventory& inventory, bool availableOnly) {
 void handlePreviewAllocation(Inventory& inventory, Graph& warehouse) {
     string productId = readId("  Enter product ID: ");
     if (inventory.findProduct(productId) == nullptr) {
-        cout << "  Product " << productId << " not found.\n";
+        cout << UI::err() << "Product " << productId << " not found.\n";
         return;
     }
     int quantity = readInt("  Enter quantity needed (1 - 100000): ", 1, 100000);
     string reference = readId("  Enter robot's current location (e.g. L01): ");
     if (warehouse.findLocation(reference) == nullptr) {
-        cout << "  Location " << reference << " does not exist.\n";
+        cout << UI::err() << "Location " << reference << " does not exist.\n";
         return;
     }
 
@@ -294,7 +294,7 @@ int readOrderItems(Order* order, const Inventory& inventory) {
 void handleAddOrder(OrderManager& orders, const Inventory& inventory) {
     string orderId = readId("  Enter order ID (e.g. O112): ");
     if (orders.findOrder(orderId) != nullptr) {
-        cout << "  Order " << orderId << " already exists. Order IDs must be unique.\n";
+        cout << UI::err() << "Order " << orderId << " already exists. Order IDs must be unique.\n";
         return;
     }
     string customerId = readId("  Enter customer ID (e.g. CU12): ");
@@ -303,7 +303,7 @@ void handleAddOrder(OrderManager& orders, const Inventory& inventory) {
     Order* order = new Order(orderId, customerId);
     readOrderItems(order, inventory);
     if (orders.addOrder(order, inventory)) {
-        cout << "  Order " << orderId << " added and placed at the rear of the queue.\n";
+        cout << UI::good() << "Order " << orderId << " added and placed at the rear of the queue.\n";
     } else {
         delete order;
     }
@@ -313,11 +313,11 @@ void handleAddItemsToOrder(OrderManager& orders, const Inventory& inventory) {
     string orderId = readId("  Enter order ID: ");
     Order* order = orders.findOrder(orderId);
     if (order == nullptr) {
-        cout << "  Order " << orderId << " not found.\n";
+        cout << UI::err() << "Order " << orderId << " not found.\n";
         return;
     }
     if (order->status != OrderStatus::Pending) {
-        cout << "  Items can only be added to a Pending order (this one is "
+        cout << UI::err() << "Items can only be added to a Pending order (this one is "
              << statusToString(order->status) << ").\n";
         return;
     }
@@ -338,7 +338,7 @@ void handleCancelOrder(OrderManager& orders, Inventory& inventory, RobotFleet& f
     if (orders.cancelOrder(orderId, inventory, fleet)) {
         // A cancelled order no longer needs its picking plan
         plans.remove(orderId);
-        cout << "  Order " << orderId << " cancelled.\n";
+        cout << UI::good() << "Order " << orderId << " cancelled.\n";
     }
 }
 
@@ -396,7 +396,7 @@ void handleRegisterRobot(RobotFleet& fleet, const Graph& warehouse) {
         return;
     }
     if (fleet.registerRobot(robot, warehouse)) {
-        cout << "  Robot " << id << " registered as a " << robot->typeName() << ".\n";
+        cout << UI::good() << "Robot " << id << " registered as a " << robot->typeName() << ".\n";
     } else {
         delete robot;
     }
@@ -416,11 +416,11 @@ void handleAssignTask(RobotFleet& fleet) {
     // Orders are assigned through the picking plan (Module 5), which also reserves stock,
     // so this option only accepts general tasks
     if (!isValidId(taskId, "T")) {
-        cout << "  Task ID must look like T01. Orders are assigned by generating a picking plan.\n";
+        cout << UI::err() << "Task ID must look like T01. Orders are assigned by generating a picking plan.\n";
         return;
     }
     if (fleet.assignTask(robotId, taskId)) {
-        cout << "  Robot " << robotId << " assigned to task " << taskId << ".\n";
+        cout << UI::good() << "Robot " << robotId << " assigned to task " << taskId << ".\n";
     }
 }
 
@@ -434,7 +434,7 @@ void handleReleaseRobot(RobotFleet& fleet) {
         return;
     }
     if (fleet.releaseRobot(robotId)) {
-        cout << "  Robot " << robotId << " released and Available.\n";
+        cout << UI::good() << "Robot " << robotId << " released and Available.\n";
     }
 }
 
@@ -444,12 +444,12 @@ void handleMaintenance(RobotFleet& fleet, bool goingIn, HistoryManager& history)
     if (goingIn) {
         if (fleet.setUnavailable(robotId, oldStatus)) {
             history.recordMaintenance(robotId, oldStatus, RobotStatus::Unavailable);
-            cout << "  Robot " << robotId << " is now Unavailable (maintenance).\n";
+            cout << UI::good() << "Robot " << robotId << " is now Unavailable (maintenance).\n";
         }
     } else {
         if (fleet.returnFromMaintenance(robotId, oldStatus)) {
             history.recordMaintenance(robotId, oldStatus, RobotStatus::Available);
-            cout << "  Robot " << robotId << " is back and Available.\n";
+            cout << UI::good() << "Robot " << robotId << " is back and Available.\n";
         }
     }
 }
@@ -459,7 +459,7 @@ void handleEligibilityCheck(RobotFleet& fleet, OrderManager& orders, const Inven
     string orderId = readId("  Enter order ID: ");
     Order* order = orders.findOrder(orderId);
     if (order == nullptr) {
-        cout << "  Order " << orderId << " not found.\n";
+        cout << UI::err() << "Order " << orderId << " not found.\n";
         return;
     }
 
@@ -579,7 +579,7 @@ void executionMenu(Executor& executor, PlanManager& plans) {
 void handleFindStation(ChargingManager& charging, RobotFleet& fleet, const Graph& warehouse) {
     Robot* robot = fleet.findRobot(readId("  Enter robot ID: "));
     if (robot == nullptr) {
-        cout << "  Robot not found.\n";
+        cout << UI::err() << "Robot not found.\n";
         return;
     }
     int distance;
@@ -627,7 +627,7 @@ void chargingMenu(ChargingManager& charging, RobotFleet& fleet, const Graph& war
         } else {
             Robot* robot = fleet.findRobot(readId("  Enter robot ID: "));
             if (robot == nullptr) {
-                cout << "  Robot not found.\n";
+                cout << UI::err() << "Robot not found.\n";
             } else if (choice == 5) {
                 charging.sendToCharge(robot, warehouse);
             } else if (choice == 6) {
@@ -716,21 +716,37 @@ int main() {
 
         int choice = readInt("Enter choice: ", 0, 8);
         if (choice == 1) {
+            UI::clear();
             layoutMenu(warehouse, history);
+            UI::clear();
         } else if (choice == 2) {
+            UI::clear();
             inventoryMenu(inventory, warehouse, history);
+            UI::clear();
         } else if (choice == 3) {
+            UI::clear();
             ordersMenu(orders, inventory, fleet, plans);
+            UI::clear();
         } else if (choice == 4) {
+            UI::clear();
             robotsMenu(fleet, warehouse, orders, inventory, history);
+            UI::clear();
         } else if (choice == 5) {
+            UI::clear();
             planningMenu(planner, plans);
+            UI::clear();
         } else if (choice == 6) {
+            UI::clear();
             executionMenu(executor, plans);
+            UI::clear();
         } else if (choice == 7) {
+            UI::clear();
             chargingMenu(charging, fleet, warehouse);
+            UI::clear();
         } else if (choice == 8) {
+            UI::clear();
             historyMenu(history, inventory, warehouse, fleet);
+            UI::clear();
         } else {
             cout << "Goodbye!\n";
             break;

@@ -1,4 +1,5 @@
 #include "History.h"
+#include "UI.h"
 #include <iostream>
 
 Operation::Operation(OperationType operationType) {
@@ -75,7 +76,7 @@ void HistoryManager::displayMostRecent() const {
 
 void HistoryManager::displayAll() const {
     if (history.isEmpty()) {
-        cout << "  History is empty.\n";
+        cout << UI::note() << "History is empty.\n";
         return;
     }
     cout << "\n  Undo history (top = most recent):\n";
@@ -109,17 +110,17 @@ bool HistoryManager::undo(Inventory& inventory, Graph& warehouse, RobotFleet& fl
             rack = product->findRack(op->rackId);
         }
         if (rack == nullptr) {
-            cout << "  Undo rejected: the rack entry " << op->productId << "/" << op->rackId
+            cout << UI::err() << "Undo rejected: the rack entry " << op->productId << "/" << op->rackId
                  << " no longer exists.\n";
             return false;
         }
         if (op->oldQuantity < rack->reservedQuantity) {
-            cout << "  Undo rejected: restoring " << op->oldQuantity << " units would be below the "
+            cout << UI::err() << "Undo rejected: restoring " << op->oldQuantity << " units would be below the "
                  << rack->reservedQuantity << " units currently reserved.\n";
             return false;
         }
         rack->totalQuantity = op->oldQuantity;
-        cout << "  Undone: " << op->productId << " in " << op->rackId << " restored to "
+        cout << UI::good() << "Undone: " << op->productId << " in " << op->rackId << " restored to "
              << op->oldQuantity << " units.\n";
 
     } else if (op->type == OperationType::BlockPathway) {
@@ -129,28 +130,28 @@ bool HistoryManager::undo(Inventory& inventory, Graph& warehouse, RobotFleet& fl
                  << " was removed since, so there is nothing to reopen.\n";
         } else if (warehouse.isPathwayBlocked(op->fromId, op->toId)) {
             warehouse.reopenPathway(op->fromId, op->toId);
-            cout << "  Undone: pathway " << op->fromId << " <-> " << op->toId << " is OPEN again.\n";
+            cout << UI::good() << "Undone: pathway " << op->fromId << " <-> " << op->toId << " is OPEN again.\n";
         } else {
-            cout << "  Pathway " << op->fromId << " <-> " << op->toId << " is already open.\n";
+            cout << UI::note() << "Pathway " << op->fromId << " <-> " << op->toId << " is already open.\n";
         }
 
     } else {
         Robot* robot = fleet.findRobot(op->robotId);
         if (robot == nullptr) {
-            cout << "  Undo rejected: robot " << op->robotId << " no longer exists.\n";
+            cout << UI::err() << "Undo rejected: robot " << op->robotId << " no longer exists.\n";
             return false;
         }
         if (robot->hasActiveTask()) {
-            cout << "  Undo rejected: " << op->robotId << " now has an active task ("
+            cout << UI::err() << "Undo rejected: " << op->robotId << " now has an active task ("
                  << robot->assignedTask << ").\n";
             return false;
         }
         if (robot->status == RobotStatus::Charging || robot->status == RobotStatus::WaitingForCharging) {
-            cout << "  Undo rejected: " << op->robotId << " is in the charging system.\n";
+            cout << UI::err() << "Undo rejected: " << op->robotId << " is in the charging system.\n";
             return false;
         }
         robot->status = op->oldStatus;
-        cout << "  Undone: " << op->robotId << " status restored to "
+        cout << UI::good() << "Undone: " << op->robotId << " status restored to "
              << robotStatusToString(op->oldStatus) << ".\n";
     }
 
@@ -166,7 +167,7 @@ bool HistoryManager::discardTop() {
         cout << "  Nothing to discard.\n";
         return false;
     }
-    cout << "  Discarded without undoing: " << op->describe() << "\n";
+    cout << UI::note() << "Discarded without undoing: " << op->describe() << "\n";
     delete op;
     return true;
 }

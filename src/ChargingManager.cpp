@@ -1,4 +1,5 @@
 #include "ChargingManager.h"
+#include "UI.h"
 #include "Utils.h"
 #include <iostream>
 #include <iomanip>
@@ -142,11 +143,11 @@ bool ChargingManager::load(const string& fileName, const Graph& warehouse) {
 
 bool ChargingManager::addStation(const string& id, const string& locationId, int slots, const Graph& warehouse) {
     if (!isValidId(id, "C")) {
-        cout << "  Invalid station ID '" << id << "'. It must look like C01.\n";
+        cout << UI::err() << "Invalid station ID '" << id << "'. It must look like C01.\n";
         return false;
     }
     if (find(id) != nullptr) {
-        cout << "  Station " << id << " already exists.\n";
+        cout << UI::err() << "Station " << id << " already exists.\n";
         return false;
     }
     Location* location = warehouse.findLocation(locationId);
@@ -156,7 +157,7 @@ bool ChargingManager::addStation(const string& id, const string& locationId, int
     }
     // Slots are a small bounded number, which is why a fixed array is fine here
     if (slots < 1 || slots > 10) {
-        cout << "  A station must have between 1 and 10 slots.\n";
+        cout << UI::err() << "A station must have between 1 and 10 slots.\n";
         return false;
     }
 
@@ -262,7 +263,7 @@ bool ChargingManager::sendToCharge(Robot* robot, const Graph& warehouse) {
         robot->status = RobotStatus::Unavailable;
         cout << "  " << robot->id << " cannot reach any charging station with "
              << fixed << setprecision(1) << robot->battery << "% battery.\n";
-        cout << "  It has been set Unavailable and must be handled manually.\n";
+        cout << UI::note() << "It has been set Unavailable and must be handled manually.\n";
         return false;
     }
 
@@ -346,7 +347,7 @@ void ChargingManager::displayAll() const {
 void ChargingManager::displayStation(const string& stationId) const {
     ChargingStation* station = find(stationId);
     if (station == nullptr) {
-        cout << "  Station " << stationId << " not found.\n";
+        cout << UI::err() << "Station " << stationId << " not found.\n";
         return;
     }
     station->display();

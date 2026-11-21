@@ -8,11 +8,49 @@ public:
     static bool useColor() {
         return true;
     }
-    static string paint(const string& text, const string& code) {
+    static string start(const string& code) {
         if (!useColor()) {
-            return text;
+            return "";
         }
-        return "\033[" + code + "m" + text + "\033[0m";
+        return "\033[" + code + "m";
+    }
+    static string reset() {
+        if (!useColor()) {
+            return "";
+        }
+        return "\033[0m";
+    }
+    static string paint(const string& text, const string& code) {
+        return start(code) + text + reset();
+    }
+    static void clear() {
+        if (useColor()) {
+            cout << "\033[2J\033[H";
+        }
+    }
+    static string err() {
+        return "  " + paint("ERROR", "1;31") + "  ";
+    }
+    static string good() {
+        return "  " + paint("OK", "1;32") + "     ";
+    }
+    static string note() {
+        return "  " + paint("NOTE", "1;33") + "   ";
+    }
+    static string statusColor(const string& status) {
+        if (status == "Available" || status == "Completed") {
+            return "32";
+        }
+        if (status == "Pending" || status == "Reserved" || status == "Partially Fulfilled" || status == "Waiting for Charging") {
+            return "33";
+        }
+        if (status == "Assigned" || status == "Charging") {
+            return "36";
+        }
+        if (status == "Unavailable" || status == "Cancelled") {
+            return "31";
+        }
+        return "0";
     }
     static void header(const string& title) {
         int width = 50;
@@ -48,12 +86,6 @@ public:
         } else {
             cout << "  " << paint(label, "1;33") << " " << text << "\n";
         }
-    }
-    static void success(const string& text) {
-        cout << "  " << paint("OK", "1;32") << "  " << text << "\n";
-    }
-    static void error(const string& text) {
-        cout << "  " << paint("ERROR", "1;31") << "  " << text << "\n";
     }
 };
 #endif

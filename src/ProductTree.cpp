@@ -1,4 +1,5 @@
 #include "ProductTree.h"
+#include "UI.h"
 #include "Utils.h"
 #include <iostream>
 #include <iomanip>
@@ -262,10 +263,10 @@ void ProductTree::displayAll() const {
         cout << "  No products in inventory.\n";
         return;
     }
-    cout << "\n  " << left << setw(6) << "ID" << setw(22) << "Name"
+    cout << "\n  " << UI::start("1;36") << left << setw(6) << "ID" << setw(22) << "Name"
          << right << setw(10) << "Weight" << setw(8) << "Total"
-         << setw(10) << "Reserved" << setw(11) << "Available" << setw(9) << "Reorder" << "\n";
-    cout << "  --------------------------------------------------------------------------\n";
+         << setw(10) << "Reserved" << setw(11) << "Available" << setw(9) << "Reorder" << UI::reset() << "\n";
+    cout << UI::start("90") << "  --------------------------------------------------------------------------" << UI::reset() << "\n";
     displayInOrder(root);
     cout << "  (" << count << " products, shown in ID order by in-order traversal)\n";
 }
@@ -309,7 +310,7 @@ void ProductTree::displayStructure(AVLNode* node, int depth) const {
 
 void ProductTree::displayStructure() const {
     if (root == nullptr) {
-        cout << "  Tree is empty.\n";
+        cout << UI::note() << "Tree is empty.\n";
         return;
     }
     cout << "\n  AVL tree (rotated 90 degrees: root on the left, right child above, left child below)\n\n";

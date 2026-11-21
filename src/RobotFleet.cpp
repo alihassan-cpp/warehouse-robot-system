@@ -1,4 +1,5 @@
 #include "RobotFleet.h"
+#include "UI.h"
 #include "Utils.h"
 #include <iostream>
 #include <iomanip>
@@ -78,19 +79,19 @@ bool RobotFleet::loadRobots(const string& fileName, const Graph& warehouse) {
 
 bool RobotFleet::registerRobot(Robot* robot, const Graph& warehouse) {
     if (!isValidId(robot->id, "RB")) {
-        cout << "  Invalid robot ID '" << robot->id << "'. It must look like RB01.\n";
+        cout << UI::err() << "Invalid robot ID '" << robot->id << "'. It must look like RB01.\n";
         return false;
     }
     if (findRobot(robot->id) != nullptr) {
-        cout << "  Robot " << robot->id << " already exists.\n";
+        cout << UI::err() << "Robot " << robot->id << " already exists.\n";
         return false;
     }
     if (warehouse.findLocation(robot->locationId) == nullptr) {
-        cout << "  Location " << robot->locationId << " does not exist.\n";
+        cout << UI::err() << "Location " << robot->locationId << " does not exist.\n";
         return false;
     }
     if (robot->battery < 0 || robot->battery > 100) {
-        cout << "  Battery must be between 0 and 100.\n";
+        cout << UI::err() << "Battery must be between 0 and 100.\n";
         return false;
     }
     // Each type checks its own limit (virtual call)
@@ -127,10 +128,10 @@ Robot* RobotFleet::findRobot(const string& robotId) const {
 // ---------------------------------------------------------------
 
 void RobotFleet::displayHeader() const {
-    cout << "\n  " << left << setw(6) << "Robot" << setw(12) << "Type" << setw(10) << "Location"
+    cout << "\n  " << UI::start("1;36") << left << setw(6) << "Robot" << setw(12) << "Type" << setw(10) << "Location"
          << right << setw(8) << "Battery" << setw(10) << "Capacity" << "   "
-         << left << setw(22) << "Status" << "Task\n";
-    cout << "  ----------------------------------------------------------------------------\n";
+         << left << setw(22) << "Status" << "Task" << UI::reset() << "\n";
+    cout << UI::start("90") << "  ----------------------------------------------------------------------------" << UI::reset() << "\n";
 }
 
 void RobotFleet::displayRow(const Robot* robot) const {
@@ -138,14 +139,14 @@ void RobotFleet::displayRow(const Robot* robot) const {
          << setw(10) << robot->locationId
          << right << setw(7) << fixed << setprecision(1) << robot->battery << "%"
          << setw(7) << setprecision(1) << robot->capacity << " kg   "
-         << left << setw(22) << robotStatusToString(robot->status);
+         << left << UI::start(UI::statusColor(robotStatusToString(robot->status))) << setw(22) << robotStatusToString(robot->status) << UI::reset();
     if (robot->hasActiveTask()) {
         cout << robot->assignedTask;
     } else {
         cout << "-";
     }
     if (robot->needsCharging()) {
-        cout << "  [needs charging]";
+        cout << "  " << UI::paint("[needs charging]", "1;31");
     }
     cout << "\n";
 }
@@ -183,7 +184,7 @@ void RobotFleet::displayAvailable() const {
 void RobotFleet::displayRobot(const string& robotId) const {
     Robot* robot = findRobot(robotId);
     if (robot == nullptr) {
-        cout << "  Robot " << robotId << " not found.\n";
+        cout << UI::err() << "Robot " << robotId << " not found.\n";
         return;
     }
     displayHeader();
@@ -214,16 +215,16 @@ void RobotFleet::displayNeedingCharge() const {
 bool RobotFleet::updateBattery(const string& robotId, double newBattery) {
     Robot* robot = findRobot(robotId);
     if (robot == nullptr) {
-        cout << "  Robot " << robotId << " not found.\n";
+        cout << UI::err() << "Robot " << robotId << " not found.\n";
         return false;
     }
     if (newBattery < 0 || newBattery > 100) {
-        cout << "  Battery must be between 0 and 100.\n";
+        cout << UI::err() << "Battery must be between 0 and 100.\n";
         return false;
     }
     robot->battery = newBattery;
     if (robot->needsCharging()) {
-        cout << "  Note: " << robotId << " is below 20% and needs charging.\n";
+        cout << UI::note() << "Note: " << robotId << " is below 20% and needs charging.\n";
     }
     return true;
 }
@@ -231,12 +232,12 @@ bool RobotFleet::updateBattery(const string& robotId, double newBattery) {
 bool RobotFleet::assignTask(const string& robotId, const string& taskId) {
     Robot* robot = findRobot(robotId);
     if (robot == nullptr) {
-        cout << "  Robot " << robotId << " not found.\n";
+        cout << UI::err() << "Robot " << robotId << " not found.\n";
         return false;
     }
     // One robot, one active assignment
     if (robot->hasActiveTask()) {
-        cout << "  Robot " << robotId << " already has an active assignment (" << robot->assignedTask << ").\n";
+        cout << UI::err() << "Robot " << robotId << " already has an active assignment (" << robot->assignedTask << ").\n";
         return false;
     }
     if (robot->status != RobotStatus::Available) {
@@ -252,7 +253,7 @@ bool RobotFleet::assignTask(const string& robotId, const string& taskId) {
 bool RobotFleet::releaseRobot(const string& robotId) {
     Robot* robot = findRobot(robotId);
     if (robot == nullptr) {
-        cout << "  Robot " << robotId << " not found.\n";
+        cout << UI::err() << "Robot " << robotId << " not found.\n";
         return false;
     }
     if (!robot->hasActiveTask()) {
@@ -272,19 +273,19 @@ bool RobotFleet::releaseRobot(const string& robotId) {
 bool RobotFleet::setUnavailable(const string& robotId, RobotStatus& oldStatus) {
     Robot* robot = findRobot(robotId);
     if (robot == nullptr) {
-        cout << "  Robot " << robotId << " not found.\n";
+        cout << UI::err() << "Robot " << robotId << " not found.\n";
         return false;
     }
     if (robot->hasActiveTask()) {
-        cout << "  Robot " << robotId << " has an active task and cannot go to maintenance.\n";
+        cout << UI::err() << "Robot " << robotId << " has an active task and cannot go to maintenance.\n";
         return false;
     }
     if (robot->status == RobotStatus::Charging || robot->status == RobotStatus::WaitingForCharging) {
-        cout << "  Robot " << robotId << " is in the charging system and cannot go to maintenance.\n";
+        cout << UI::err() << "Robot " << robotId << " is in the charging system and cannot go to maintenance.\n";
         return false;
     }
     if (robot->status == RobotStatus::Unavailable) {
-        cout << "  Robot " << robotId << " is already in maintenance.\n";
+        cout << UI::err() << "Robot " << robotId << " is already in maintenance.\n";
         return false;
     }
 
@@ -296,7 +297,7 @@ bool RobotFleet::setUnavailable(const string& robotId, RobotStatus& oldStatus) {
 bool RobotFleet::returnFromMaintenance(const string& robotId, RobotStatus& oldStatus) {
     Robot* robot = findRobot(robotId);
     if (robot == nullptr) {
-        cout << "  Robot " << robotId << " not found.\n";
+        cout << UI::err() << "Robot " << robotId << " not found.\n";
         return false;
     }
     if (robot->status != RobotStatus::Unavailable) {

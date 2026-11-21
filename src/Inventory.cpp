@@ -1,4 +1,5 @@
 #include "Inventory.h"
+#include "UI.h"
 #include "Utils.h"
 #include <iostream>
 #include <iomanip>
@@ -103,19 +104,19 @@ bool Inventory::loadInventory(const string& fileName) {
 
 bool Inventory::addProduct(const string& id, const string& name, double weight, int reorderLevel) {
     if (!isValidId(id, "P")) {
-        cout << "  Invalid product ID '" << id << "'. It must look like P101.\n";
+        cout << UI::err() << "Invalid product ID '" << id << "'. It must look like P101.\n";
         return false;
     }
     if (name.empty()) {
-        cout << "  Product name cannot be empty.\n";
+        cout << UI::err() << "Product name cannot be empty.\n";
         return false;
     }
     if (weight <= 0) {
-        cout << "  Unit weight must be greater than 0.\n";
+        cout << UI::err() << "Unit weight must be greater than 0.\n";
         return false;
     }
     if (reorderLevel < 0) {
-        cout << "  Reorder level cannot be negative.\n";
+        cout << UI::err() << "Reorder level cannot be negative.\n";
         return false;
     }
 
@@ -123,7 +124,7 @@ bool Inventory::addProduct(const string& id, const string& name, double weight, 
     if (!products.insert(product)) {
         // Tree rejected it, so we still own it and must free it
         delete product;
-        cout << "  Product " << id << " already exists.\n";
+        cout << UI::err() << "Product " << id << " already exists.\n";
         return false;
     }
     return true;
@@ -132,13 +133,13 @@ bool Inventory::addProduct(const string& id, const string& name, double weight, 
 bool Inventory::deleteProduct(const string& id) {
     Product* product = products.search(id);
     if (product == nullptr) {
-        cout << "  Product " << id << " not found.\n";
+        cout << UI::err() << "Product " << id << " not found.\n";
         return false;
     }
 
     // PDF rule 11: a product with active reservations cannot be deleted
     if (product->hasReservations()) {
-        cout << "  Cannot delete " << id << ": some racks hold reservations for it.\n";
+        cout << UI::err() << "Cannot delete " << id << ": some racks hold reservations for it.\n";
         return false;
     }
 
@@ -153,7 +154,7 @@ Product* Inventory::findProduct(const string& id) const {
 void Inventory::displayProduct(const string& id) const {
     Product* p = products.search(id);
     if (p == nullptr) {
-        cout << "  Product " << id << " not found.\n";
+        cout << UI::err() << "Product " << id << " not found.\n";
         return;
     }
 
@@ -168,10 +169,10 @@ void Inventory::displayProduct(const string& id) const {
         return;
     }
 
-    cout << "\n  " << left << setw(7) << "Rack" << setw(10) << "Location"
+    cout << "\n  " << UI::start("1;36") << left << setw(7) << "Rack" << setw(10) << "Location"
          << right << setw(7) << "Total" << setw(10) << "Reserved" << setw(11) << "Available"
-         << "   Reservations\n";
-    cout << "  ------------------------------------------------------------------\n";
+         << "   Reservations" << UI::reset() << "\n";
+    cout << UI::start("90") << "  ------------------------------------------------------------------" << UI::reset() << "\n";
     RackEntry* rack = p->rackHead;
     while (rack != nullptr) {
         cout << "  " << left << setw(7) << rack->rackId << setw(10) << racks.locationOf(rack->rackId)
@@ -206,15 +207,15 @@ void Inventory::displayRacks() const {
 bool Inventory::addRackEntry(const string& productId, const string& rackId, int quantity) {
     Product* product = products.search(productId);
     if (product == nullptr) {
-        cout << "  Product " << productId << " not found.\n";
+        cout << UI::err() << "Product " << productId << " not found.\n";
         return false;
     }
     if (racks.find(rackId) == nullptr) {
-        cout << "  Rack " << rackId << " does not exist in racks.txt.\n";
+        cout << UI::err() << "Rack " << rackId << " does not exist in racks.txt.\n";
         return false;
     }
     if (quantity < 0) {
-        cout << "  Quantity cannot be negative.\n";
+        cout << UI::err() << "Quantity cannot be negative.\n";
         return false;
     }
     if (!product->addRack(rackId, quantity)) {
@@ -227,7 +228,7 @@ bool Inventory::addRackEntry(const string& productId, const string& rackId, int 
 bool Inventory::updateQuantity(const string& productId, const string& rackId, int newQuantity, int& oldQuantity) {
     Product* product = products.search(productId);
     if (product == nullptr) {
-        cout << "  Product " << productId << " not found.\n";
+        cout << UI::err() << "Product " << productId << " not found.\n";
         return false;
     }
     RackEntry* rack = product->findRack(rackId);
@@ -238,11 +239,11 @@ bool Inventory::updateQuantity(const string& productId, const string& rackId, in
 
     // The new total cannot be negative or drop below what orders have already reserved
     if (newQuantity < 0) {
-        cout << "  Quantity cannot be negative.\n";
+        cout << UI::err() << "Quantity cannot be negative.\n";
         return false;
     }
     if (newQuantity < rack->reservedQuantity) {
-        cout << "  Quantity cannot be lower than the reserved amount (" << rack->reservedQuantity << ").\n";
+        cout << UI::err() << "Quantity cannot be lower than the reserved amount (" << rack->reservedQuantity << ").\n";
         return false;
     }
 
@@ -254,7 +255,7 @@ bool Inventory::updateQuantity(const string& productId, const string& rackId, in
 bool Inventory::removeRackEntry(const string& productId, const string& rackId) {
     Product* product = products.search(productId);
     if (product == nullptr) {
-        cout << "  Product " << productId << " not found.\n";
+        cout << UI::err() << "Product " << productId << " not found.\n";
         return false;
     }
     RackEntry* rack = product->findRack(rackId);
@@ -265,7 +266,7 @@ bool Inventory::removeRackEntry(const string& productId, const string& rackId) {
 
     // Only an empty rack entry with no reservations may be removed
     if (rack->totalQuantity != 0 || rack->reservedQuantity != 0) {
-        cout << "  Rack entry can only be removed when total and reserved are both 0 "
+        cout << UI::err() << "Rack entry can only be removed when total and reserved are both 0 "
              << "(total " << rack->totalQuantity << ", reserved " << rack->reservedQuantity << ").\n";
         return false;
     }

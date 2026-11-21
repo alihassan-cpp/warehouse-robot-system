@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include "UI.h"
 #include <iostream>
 #include <cstdlib>
 #include <sstream>
@@ -107,7 +108,7 @@ bool parseDouble(const string& text, double& result) {
 }
 
 string readLine(const string& prompt) {
-    cout << prompt;
+    cout << UI::paint(prompt, "36");
     string line;
 
     // If input ends completely (for example Ctrl+Z), exit cleanly instead of looping forever
@@ -123,7 +124,7 @@ int readInt(const string& prompt, int minValue, int maxValue) {
         string line = readLine(prompt);
         int value;
         if (!parseInt(line, value)) {
-            cout << "  Invalid input. Please enter a whole number.\n";
+            cout << UI::err() << "Invalid input. Please enter a whole number.\n";
         } else if (value < minValue || value > maxValue) {
             cout << "  Please enter a number between " << minValue << " and " << maxValue << ".\n";
         } else {
@@ -137,7 +138,7 @@ double readDouble(const string& prompt, double minValue, double maxValue) {
         string line = readLine(prompt);
         double value;
         if (!parseDouble(line, value)) {
-            cout << "  Invalid input. Please enter a number (e.g. 2.5).\n";
+            cout << UI::err() << "Invalid input. Please enter a number (e.g. 2.5).\n";
         } else if (value < minValue || value > maxValue) {
             cout << "  Please enter a value between " << minValue << " and " << maxValue << ".\n";
         } else {

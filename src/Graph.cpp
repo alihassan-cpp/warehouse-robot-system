@@ -1,4 +1,5 @@
 #include "Graph.h"
+#include "UI.h"
 #include "Queue.h"
 #include "Utils.h"
 #include <iostream>
@@ -197,19 +198,19 @@ bool Graph::loadPathways(const string& fileName) {
 
 bool Graph::addLocation(const string& id, const string& type, const string& name) {
     if (!isValidId(id, "L")) {
-        cout << "  Invalid location ID '" << id << "'. It must look like L01.\n";
+        cout << UI::err() << "Invalid location ID '" << id << "'. It must look like L01.\n";
         return false;
     }
     if (!isValidType(type)) {
-        cout << "  Invalid type '" << type << "'. Use RACK, PACKING or CHARGING.\n";
+        cout << UI::err() << "Invalid type '" << type << "'. Use RACK, PACKING or CHARGING.\n";
         return false;
     }
     if (name.empty()) {
-        cout << "  Location name cannot be empty.\n";
+        cout << UI::err() << "Location name cannot be empty.\n";
         return false;
     }
     if (findLocation(id) != nullptr) {
-        cout << "  Location " << id << " already exists.\n";
+        cout << UI::err() << "Location " << id << " already exists.\n";
         return false;
     }
 
@@ -231,23 +232,23 @@ bool Graph::addPathway(const string& fromId, const string& toId, int distance, b
     Location* to = findLocation(toId);
 
     if (from == nullptr) {
-        cout << "  Location " << fromId << " does not exist.\n";
+        cout << UI::err() << "Location " << fromId << " does not exist.\n";
         return false;
     }
     if (to == nullptr) {
-        cout << "  Location " << toId << " does not exist.\n";
+        cout << UI::err() << "Location " << toId << " does not exist.\n";
         return false;
     }
     if (from == to) {
-        cout << "  A pathway cannot connect a location to itself.\n";
+        cout << UI::err() << "A pathway cannot connect a location to itself.\n";
         return false;
     }
     if (distance <= 0) {
-        cout << "  Distance must be greater than 0.\n";
+        cout << UI::err() << "Distance must be greater than 0.\n";
         return false;
     }
     if (findEdge(from, to) != nullptr) {
-        cout << "  A pathway between " << fromId << " and " << toId << " already exists.\n";
+        cout << UI::err() << "A pathway between " << fromId << " and " << toId << " already exists.\n";
         return false;
     }
 
@@ -290,7 +291,7 @@ bool Graph::blockPathway(const string& fromId, const string& toId) {
         return false;
     }
     if (forward->blocked) {
-        cout << "  This pathway is already blocked.\n";
+        cout << UI::err() << "This pathway is already blocked.\n";
         return false;
     }
 
@@ -315,7 +316,7 @@ bool Graph::reopenPathway(const string& fromId, const string& toId) {
         return false;
     }
     if (!forward->blocked) {
-        cout << "  This pathway is already open.\n";
+        cout << UI::err() << "This pathway is already open.\n";
         return false;
     }
 
@@ -361,7 +362,7 @@ bool Graph::isPathwayBlocked(const string& fromId, const string& toId) const {
 void Graph::displayLocation(const string& id) const {
     Location* location = findLocation(id);
     if (location == nullptr) {
-        cout << "  Location " << id << " not found.\n";
+        cout << UI::err() << "Location " << id << " not found.\n";
         return;
     }
 
@@ -375,7 +376,7 @@ void Graph::displayLocation(const string& id) const {
     while (edge != nullptr) {
         cout << edge->destination->id << "(" << edge->distance;
         if (edge->blocked) {
-            cout << ", BLOCKED";
+            cout << ", " << UI::paint("BLOCKED", "1;31");
         }
         cout << ")";
         if (edge->next != nullptr) {
@@ -394,7 +395,7 @@ void Graph::displayAll() const {
 
     cout << "\n  Warehouse layout (" << locationCount << " locations)\n";
     cout << "  Format: neighbour(distance), blocked pathways are marked BLOCKED\n";
-    cout << "  ------------------------------------------------------------\n";
+    cout << UI::start("90") << "  ------------------------------------------------------------" << UI::reset() << "\n";
     Location* current = head;
     while (current != nullptr) {
         displayLocation(current->id);
